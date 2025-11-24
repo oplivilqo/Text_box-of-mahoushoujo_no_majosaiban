@@ -30,7 +30,7 @@ Alt+1-9: 切换表情1-9(部分角色表情较少 望大家谅解)
 Enter: 生成图片
 Esc: 退出程序
 Ctrl+Tab: 清除图片
-      
+
 程序说明：
 这个版本的程序占用体积较小，但是需要预加载，初次更换角色后需要等待数秒才能正常使用，望周知（
 按Tab可清除生成图片，降低占用空间，但清除图片后需重启才能正常使用
@@ -60,18 +60,25 @@ mahoshojo_over = [2339,800]   #文本范围右下角位置
 
 
 
-import random
-import time
-import keyboard
-import pyperclip
 import io
-from PIL import Image,ImageDraw,ImageFont
-import win32clipboard
 import os
+import random
 import shutil
+import time
 
-from text_fit_draw import draw_text_auto
+import keyboard
+import matplotlib
+import pyperclip
+import win32clipboard
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+
 from image_fit_paste import paste_image_auto
+from text_fit_draw import draw_text_auto
+
+matplotlib.use("Agg")
+import re
+
+from matplotlib import mathtext
 
 i = -1
 value_1 = -1
@@ -173,12 +180,12 @@ text_configs_dict = {
         {"text":"佐","position":(759,73),"font_color":(235,207,139),"font_size":186},
         {"text":"伯","position":(945,175),"font_color":(255, 255, 255),"font_size":92},
         {"text":"米","position":(1042,117),"font_color":(255, 255, 255),"font_size":147},
-        {"text":"莉亚","position":(1186,175),"font_color":(255, 255, 255),"font_size":92}   
+        {"text":"莉亚","position":(1186,175),"font_color":(255, 255, 255),"font_size":92}
     ],
     "yuki": [  #月代雪
     {"text":"月","position":(759,63),"font_color":(195,209,231),"font_size":196},
     {"text":"代","position":(948,175),"font_color":(255, 255, 255),"font_size":92},
-    {"text":"雪","position":(1053,117),"font_color":(255, 255, 255),"font_size":147} ,   
+    {"text":"雪","position":(1053,117),"font_color":(255, 255, 255),"font_size":147},
     {"text":"","position":(0,0),"font_color":(255, 255, 255),"font_size":1}
         ]
 }
@@ -217,11 +224,11 @@ def delate(folder_path, quality=85):
     for filename in os.listdir(folder_path):
         if filename.lower().endswith('.jpg'):
             os.remove(folder_path+"\\"+filename)
-         
+
 
 def generate_and_save_images(character_name):
     now_file = os.path.dirname(os.path.abspath(__file__))
-    
+
     # 获取当前角色的表情数量
     emotion_count = mahoshojo[character_name]["emotion_count"]
 
@@ -229,19 +236,19 @@ def generate_and_save_images(character_name):
         if filename.startswith(character_name):
             return
     print("正在加载")
-    for i in range(16):     
+    for i in range(16):
         for j in range(emotion_count):
                 # 使用绝对路径加载背景图片和角色图片
             background_path = os.path.join(now_file, "background", f"c{i+1}.png")
             overlay_path = os.path.join(now_file, character_name, f"{character_name} ({j+1}).png")
-                
+
             background = Image.open(background_path).convert("RGBA")
             overlay = Image.open(overlay_path).convert("RGBA")
-                
+
             img_num = j * 16 + i + 1
             result = background.copy()
             result.paste(overlay, (0, 134), overlay)
-                
+
                 # 使用绝对路径保存生成的图片
             save_path = os.path.join(os.path.join(magic_cut_folder), f"{character_name} ({img_num}).jpg")
             result.convert("RGB").save(save_path)
@@ -254,10 +261,10 @@ def switch_character(new_index):
         current_character_index = new_index
         character_name = get_current_character()
         print(f"已切换到角色: {character_name}")
-        
+
         # 生成并保存图片
         generate_and_save_images(character_name)
-        
+
         return True
     return False
 
@@ -289,34 +296,33 @@ def get_random_value():
     character_name = get_current_character()
     emotion_count = get_current_emotion_count()
     total_images = 16 * emotion_count
-    
+
     if expression:
         i = random.randint((expression-1)*16+1,expression*16)
         value_1 = i
         expression = None
         return f"{character_name} ({i})"
-    
-    
+
     # 循环直到找到与上次不同表情的图片
     max_attempts = 100  # 防止无限循环的安全机制
     attempts = 0
-    
+
     while attempts < max_attempts:
         i = random.randint(1, total_images)
         current_emotion = (i-1) // 16
-        
+
         # 处理第一次调用的情况
         if value_1 == -1:
             value_1 = i
             return f"{character_name} ({i})"
-        
+
         # 检查是否与上次表情不同
         if current_emotion != (value_1-1) //16:
             value_1 = i
             return f"{character_name} ({i})"
-        
+
         attempts += 1
-    
+
     # 如果尝试多次仍未找到（理论上概率极低），则返回当前随机数
     # 这是一个安全机制，防止程序卡住
     value_1 = i
@@ -421,9 +427,105 @@ def try_get_image() -> Image.Image | None:
             pass
     return None
 
+def render_latex_to_image(
+    expr: str,
+    color=(255, 255, 255),
+    dpi=200,
+    target_height: int | None = None,
+) -> Image.Image | None:
+    """
+    使用 matplotlib.mathtext 渲染 LaTeX，生成指定颜色、可缩放的透明贴图。
+    target_height 用于把公式高度缩放到与字号一致。
+    """
+    buffer = io.BytesIO()
+    try:
+        mathtext.math_to_image(f"${expr}$", buffer, dpi=dpi, color="#000000", format="png")
+    except Exception as exc:
+        print("LaTeX 渲染失败:", exc)
+        return None
+
+    buffer.seek(0)
+    gray = Image.open(buffer).convert("L")
+    alpha = ImageOps.invert(gray)
+    colored = Image.new("RGBA", gray.size, color + (0,))
+    colored.putalpha(alpha)
+
+    if target_height and colored.height > 0:
+        scale = target_height / colored.height
+        if scale > 0:
+            new_width = max(1, int(round(colored.width * scale)))
+            new_height = max(1, int(round(colored.height * scale)))
+            if new_width != colored.width or new_height != colored.height:
+                colored = colored.resize((new_width, new_height), Image.LANCZOS)
+
+    return colored
+
+LATEX_PATTERN = re.compile(r"(\${1,2})(.+?)\1", re.DOTALL)
+def split_rich_text(raw: str):
+    """
+    返回 [{"type": "text", "value": "普通文字"}, {"type": "latex", "value": r"\frac{1}{2}"}...]
+    """
+    parts = []
+    last = 0
+    for match in LATEX_PATTERN.finditer(raw):
+        if match.start() > last:
+            parts.append({"type": "text", "value": raw[last:match.start()]})
+        parts.append({"type": "latex", "value": match.group(2)})
+        last = match.end()
+    if last < len(raw):
+        parts.append({"type": "text", "value": raw[last:]})
+    return parts
+
+def render_richtext_to_image(
+    segments, font_path, font_size, max_width, color=(255, 255, 255), line_spacing=10
+):
+    font = ImageFont.truetype(font_path, font_size)
+    lines = []
+    current_line = []
+    current_width = 0
+    line_height = 0
+    for seg in segments:
+        if seg["type"] == "text":
+            text = seg["value"]
+            if not text:
+                continue
+            bbox = font.getbbox(text)
+            w, h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+            block = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            ImageDraw.Draw(block).text(
+                (-bbox[0], -bbox[1]), text, font=font, fill=color
+            )
+        else:
+            block = render_latex_to_image(
+                seg["value"], color=color, target_height=font_size
+            )
+            if block is None:
+                continue
+            w, h = block.size
+        if current_width + w > max_width and current_line:
+            lines.append((current_line, line_height))
+            current_line = []
+            current_width = 0
+            line_height = 0
+        current_line.append((block, current_width))
+        current_width += w
+        line_height = max(line_height, h)
+    if current_line:
+        lines.append((current_line, line_height))
+    if not lines:
+        return None
+    total_height = sum(h for _, h in lines) + line_spacing * (len(lines) - 1)
+    canvas = Image.new("RGBA", (max_width, total_height), (0, 0, 0, 0))
+    y = 0
+    for line, height in lines:
+        for block, x in line:
+            canvas.alpha_composite(block, (x, y))
+        y += height + line_spacing
+    return canvas
+
 def Start():
     print("Start generate...")
-    
+
     character_name = get_current_character()
     address = os.path.join(magic_cut_folder, get_random_value()+".jpg")
     BASEIMAGE_FILE = address
@@ -443,8 +545,10 @@ def Start():
     if text == "" and image is None:
         print("no text or image")
         return
-    
+
     png_bytes=None
+    max_width = IMAGE_BOX_BOTTOMRIGHT[0]-TEXT_BOX_TOPLEFT[0]
+
 
     if image is not None:
         try:
@@ -458,19 +562,48 @@ def Start():
                 align="center",
                 valign="middle",
                 padding=12,
-                allow_upscale=True, 
-                keep_alpha=True,      # 使用内容图 alpha 作为蒙版 
+                allow_upscale=True,
+                keep_alpha=True,      # 使用内容图 alpha 作为蒙版
                 role_name=character_name,  # 传递角色名称
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
         except Exception as e:
             print("Generate image failed:", e)
             return
-    
-    elif text != "":
-        print("Get text: "+text)
 
-        try:
+    elif text != "":
+        segments = split_rich_text(text)
+        has_latex = any(segment["type"] == "latex" for segment in segments)
+        if has_latex:
+            try:
+                rich_image = render_richtext_to_image(segments,
+                font_path=get_current_font(),
+                font_size=145,
+                max_width=max_width,
+                color=(255, 255, 255),
+                line_spacing=12,
+                )
+            except Exception as e:
+                print("Generate image failed:", e)
+                return
+            if rich_image is not None:
+                image = rich_image
+                text = ""
+            png_bytes = paste_image_auto(
+                image_source=BASEIMAGE_FILE,
+                image_overlay=None,
+                top_left=TEXT_BOX_TOPLEFT,
+                bottom_right=IMAGE_BOX_BOTTOMRIGHT,
+                content_image=image,
+                align="center",
+                valign="middle",
+                padding=12,
+                allow_upscale=True,
+                keep_alpha=True,      # 使用内容图 alpha 作为蒙版
+                role_name=character_name,  # 传递角色名称
+                text_configs_dict=text_configs_dict,  # 传递文字配置字典
+                )
+        else:
             png_bytes = draw_text_auto(
                 image_source=BASEIMAGE_FILE,
                 image_overlay=None,
@@ -479,30 +612,23 @@ def Start():
                 text=text,
                 align="left",
                 valign='top' ,
-                color=(255, 255, 255), 
+                color=(255, 255, 255),
                 max_font_height=145,        # 例如限制最大字号高度为 145 像素
                 font_path=get_current_font(),
                 role_name=character_name,  # 传递角色名称
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
-
-        except Exception as e:
-            print("Generate image failed:", e)
-            return
-        
+            if png_bytes is not None:
+                return png_bytes
     if png_bytes is None:
-        print("Generate image failed!")
+        print("Generate image failed")
         return
-    
     copy_png_bytes_to_clipboard(png_bytes)
-    
     if AUTO_PASTE_IMAGE:
         keyboard.send(PASTE_HOTKEY)
-
         time.sleep(0.3)
-
         if AUTO_SEND_IMAGE:
-            keyboard.send(SEND_HOTKEY)
+            keyboard.send(HOTKEY)
 
 # 角色切换快捷键绑定
 # 按Ctrl+1 到 Ctrl+9: 切换角色1-9
@@ -514,7 +640,7 @@ keyboard.add_hotkey('ctrl+q', lambda: switch_character(10))   # 角色10
 keyboard.add_hotkey('ctrl+e', lambda: switch_character(11))  # 角色11
 keyboard.add_hotkey('ctrl+r', lambda: switch_character(12))  # 角色12
 keyboard.add_hotkey('ctrl+t', lambda: switch_character(13))  # 角色13
-keyboard.add_hotkey('ctrl+y', lambda: switch_character(0)) 
+keyboard.add_hotkey('ctrl+y', lambda: switch_character(0))
 keyboard.add_hotkey('ctrl+Tab', lambda: delate(magic_cut_folder))
 
 for i in range(1,10):
