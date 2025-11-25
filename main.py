@@ -610,41 +610,42 @@ def Start():
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
 
-    elif text != "":
-        print("Get text: "+text)
+        else:
+            print("Get text: "+text)
 # ==================== 新增功能开始 ====================
-        # 定义高亮规则变量，默认为 None
-        highlight_args = {}
+            # 定义高亮规则变量，默认为 None
+            highlight_args = {}
 
-        # 如果当前角色是夏目安安 (anan)
-        if character_name == "anan":
-            # 使用正则表达式匹配中文方括号及内容
-            # 颜色采用安安的主题紫色 (参考自你的 text_configs_dict)
-            highlight_args = {
-                "bracket_color": (159, 145, 251)  # 安安的紫色
-            }
-        # ==================== 新增功能结束 ====================
-        try:
-            png_bytes = draw_text_auto(
-                image_source=BASEIMAGE_FILE,
-                image_overlay=None,
-                top_left=TEXT_BOX_TOPLEFT,
-                bottom_right=IMAGE_BOX_BOTTOMRIGHT,
-                text=text,
-                align="left",
-                valign='top' ,
-                color=(255, 255, 255),
-                max_font_height=145,        # 例如限制最大字号高度为 145 像素
-                font_path=get_current_font(),
-                role_name=character_name,  # 传递角色名称
-                text_configs_dict=text_configs_dict,  # 传递文字配置字典
-                **highlight_args
-                )
-            if png_bytes is not None:
-                return png_bytes
-        except Exception as e:
-            print("Generate image failed:", e)
-            return
+            # 如果当前角色是夏目安安 (anan)
+            if character_name == "anan":
+                # 使用正则表达式匹配中文方括号及内容
+                # 颜色采用安安的主题紫色 (参考自你的 text_configs_dict)
+                highlight_args = {
+                    "bracket_color": (159, 145, 251)  # 安安的紫色
+                }
+            # ==================== 新增功能结束 ====================
+            try:
+                png_bytes = draw_text_auto(
+                    image_source=BASEIMAGE_FILE,
+                    image_overlay=None,
+                    top_left=TEXT_BOX_TOPLEFT,
+                    bottom_right=IMAGE_BOX_BOTTOMRIGHT,
+                    text=text,
+                    align="left",
+                    valign='top' ,
+                    color=(255, 255, 255),
+                    max_font_height=145,        # 例如限制最大字号高度为 145 像素
+                    font_path=get_current_font(),
+                    role_name=character_name,  # 传递角色名称
+                    text_configs_dict=text_configs_dict,  # 传递文字配置字典
+                    **highlight_args
+                    )
+                if png_bytes is None:
+                    print("Generate image failed: empty result")
+                    return
+            except Exception as e:
+                print("Generate image failed:", e)
+                return
     if png_bytes is None:
         print("Generate image failed")
         return
