@@ -74,6 +74,11 @@ import shutil
 from text_fit_draw import draw_text_auto
 from image_fit_paste import paste_image_auto
 
+import should_handle_win
+
+# 程序启动时初始化白名单并打印
+should_handle_win.init_whitelist(verbose=True)
+
 i = -1
 value_1 = -1
 expression = None
@@ -359,6 +364,35 @@ AUTO_PASTE_IMAGE= True
 # 此值为布尔值, True 或 False
 AUTO_SEND_IMAGE= True
 
+_is_replaying_key = False  # 防止回车递归发送的标志
+
+def send_original_hotkey():
+    """
+    当当前进程不在白名单时，
+    我们需要让这次回车当作“普通回车”再发回去。
+    因为 add_hotkey 里 suppress=True，把原始按键拦截掉了。
+    """
+    global _is_replaying_key
+    _is_replaying_key = True
+    try:
+        keyboard.send(HOTKEY)  # HOTKEY = "enter"
+    finally:
+        _is_replaying_key = False
+
+def on_hotkey_pressed():
+    # 如果是我们自己“回放”的回车，就不要再处理，防止递归
+    if _is_replaying_key:
+        return
+
+    # 问问 should_handle 模块：这个前台窗口要不要接管？
+    if not should_handle_win.should_handle():
+        # 不在白名单 -> 把回车透传回去
+        send_original_hotkey()
+        return
+
+    # 在白名单进程里 -> 正常执行生成图片逻辑
+    Start()
+
 
 
 def copy_png_bytes_to_clipboard(png_bytes: bytes):
@@ -533,8 +567,12 @@ keyboard.add_hotkey('ctrl+Tab', lambda: delate(magic_cut_folder))
 for i in range(1,10):
     keyboard.add_hotkey(f'alt+{i}', lambda idx=i: get_expression(idx))
 
-# 绑定 Ctrl+Alt+H 作为全局热键
-ok=keyboard.add_hotkey(HOTKEY,Start, suppress=BLOCK_HOTKEY or HOTKEY==SEND_HOTKEY)
+# 绑定 Enter 作为全局热键
+ok = keyboard.add_hotkey(
+    HOTKEY,
+    on_hotkey_pressed,
+    suppress=True  # 始终拦截原始回车，由 on_hotkey_pressed 决定是处理还是透传
+)
 
 # 绑定Ctrl+0显示当前角色
 keyboard.add_hotkey('ctrl+0', show_current_character)
