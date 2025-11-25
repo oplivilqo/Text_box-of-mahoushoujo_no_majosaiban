@@ -21,10 +21,10 @@ print("""角色说明:
 快捷键说明:
 Ctrl+1 到 Ctrl+9: 切换角色1-9
 Ctrl+q: 切换角色10
-Ctrl+w: 切换角色11
-Ctrl+e: 切换角色12
-Ctrl+r: 切换角色13
-Ctrl+t: 切换角色14
+Ctrl+e: 切换角色11
+Ctrl+r: 切换角色12
+Ctrl+t: 切换角色13
+Ctrl+y: 切换角色14
 Ctrl+0: 显示当前角色
 Alt+1-9: 切换表情1-9(部分角色表情较少 望大家谅解)
 Enter: 生成图片
@@ -71,6 +71,12 @@ import matplotlib
 import pyperclip
 import win32clipboard
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+import io
+from PIL import Image
+import win32clipboard
+import os
+import re
+import shutil
 
 from image_fit_paste import paste_image_auto
 from text_fit_draw import draw_text_auto
@@ -604,6 +610,22 @@ def Start():
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
         else:
+    
+    elif text != "":
+        print("Get text: "+text)
+# ==================== 新增功能开始 ====================
+        # 定义高亮规则变量，默认为 None
+        highlight_args = {}
+        
+        # 如果当前角色是夏目安安 (anan)
+        if character_name == "anan":
+            # 使用正则表达式匹配中文方括号及内容
+            # 颜色采用安安的主题紫色 (参考自你的 text_configs_dict)
+            highlight_args = {
+                "bracket_color": (159, 145, 251)  # 安安的紫色
+            }
+        # ==================== 新增功能结束 ====================
+        try:
             png_bytes = draw_text_auto(
                 image_source=BASEIMAGE_FILE,
                 image_overlay=None,
@@ -617,6 +639,7 @@ def Start():
                 font_path=get_current_font(),
                 role_name=character_name,  # 传递角色名称
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
+                **highlight_args
                 )
             if png_bytes is not None:
                 return png_bytes

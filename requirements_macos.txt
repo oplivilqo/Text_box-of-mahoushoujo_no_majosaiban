@@ -1,0 +1,4 @@
+Pillow>=12.0.0
+pynput>=1.7.6
+pyperclip>=1.11.0
+pyclip>=0.7.0
