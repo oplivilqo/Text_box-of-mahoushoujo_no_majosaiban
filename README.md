@@ -24,7 +24,7 @@
 
 4.支持系统通用的emoji（TIM由于会自动将输入的emoji变成图片，故暂不支持，QQ未测试）
 
-5.增加了方便的build脚本，生成方式：pyinstaller build_onefile.spec
+5.增加了方便的build脚本，生成方式：pyinstaller build_onefile.spec 不知道为啥没办法包含pilemoji库，导致无法生成emoji，建议还是运行py文件
 
 ## 功能特色
 
