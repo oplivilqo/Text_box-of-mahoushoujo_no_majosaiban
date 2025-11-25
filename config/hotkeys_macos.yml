@@ -1,0 +1,91 @@
+# 热键配置文件
+hotkeys:
+  # 角色切换 (Ctrl+数字键)
+  character_switch:
+    - key: "<ctrl>+1"
+      action: "switch_character"
+      param: 1
+    - key: "<ctrl>+2"
+      action: "switch_character"
+      param: 2
+    - key: "<ctrl>+3"
+      action: "switch_character"
+      param: 3
+    - key: "<ctrl>+4"
+      action: "switch_character"
+      param: 4
+    - key: "<ctrl>+5"
+      action: "switch_character"
+      param: 5
+    - key: "<ctrl>+6"
+      action: "switch_character"
+      param: 6
+    - key: "<ctrl>+7"
+      action: "switch_character"
+      param: 7
+    - key: "<ctrl>+8"
+      action: "switch_character"
+      param: 8
+    - key: "<ctrl>+9"
+      action: "switch_character"
+      param: 9
+
+  # 角色切换 (特殊按键)
+  character_switch_special:
+    - key: "<ctrl>+q"
+      action: "switch_character"
+      param: 10
+    - key: "<ctrl>+e"
+      action: "switch_character"
+      param: 11
+    - key: "<ctrl>+r"
+      action: "switch_character"
+      param: 12
+    - key: "<ctrl>+t"
+      action: "switch_character"
+      param: 13
+    - key: "<ctrl>+y"
+      action: "switch_character"
+      param: 0
+
+  # 显示当前角色
+  show_character:
+    - key: "<ctrl>+0"
+      action: "show_current_character"
+
+  # 表情切换 (Alt+数字键)
+  expression_switch:
+    - key: "<alt>+1"
+      action: "get_expression"
+      param: 1
+    - key: "<alt>+2"
+      action: "get_expression"
+      param: 2
+    - key: "<alt>+3"
+      action: "get_expression"
+      param: 3
+    - key: "<alt>+4"
+      action: "get_expression"
+      param: 4
+    - key: "<alt>+5"
+      action: "get_expression"
+      param: 5
+    - key: "<alt>+6"
+      action: "get_expression"
+      param: 6
+    - key: "<alt>+7"
+      action: "get_expression"
+      param: 7
+    - key: "<alt>+8"
+      action: "get_expression"
+      param: 8
+    - key: "<alt>+9"
+      action: "get_expression"
+      param: 9
+
+  # 功能键
+  functions:
+    - key: "<ctrl>+<enter>"
+      action: "start_generate"
+    - key: "<ctrl>+<tab>"
+      action: "delete_images"

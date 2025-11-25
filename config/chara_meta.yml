@@ -1,0 +1,43 @@
+mahoshojo:
+  ema:
+    emotion_count: 8
+    font: font3.ttf
+  hiro:
+    emotion_count: 6
+    font: font3.ttf
+  sherri:
+    emotion_count: 7
+    font: font3.ttf
+  hanna:
+    emotion_count: 5
+    font: font3.ttf
+  anan:
+    emotion_count: 9
+    font: font3.ttf
+  yuki:
+    emotion_count: 18
+    font: font3.ttf
+  meruru:
+    emotion_count: 6
+    font: font3.ttf
+  noa:
+    emotion_count: 6
+    font: font3.ttf
+  reia:
+    emotion_count: 7
+    font: font3.ttf
+  miria:
+    emotion_count: 4
+    font: font3.ttf
+  nanoka:
+    emotion_count: 5
+    font: font3.ttf
+  mago:
+    emotion_count: 5
+    font: font3.ttf
+  alisa:
+    emotion_count: 6
+    font: font3.ttf
+  coco:
+    emotion_count: 5
+    font: font3.ttf

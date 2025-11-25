@@ -133,7 +133,7 @@ def generate_and_save_images(character_name):
     for i in range(16):     
         for j in range(emotion_count):
                 # 使用绝对路径加载背景图片和角色图片
-            background_path = os.path.join(now_file, "background", f"c{i+1}.png")
+            background_path = os.path.join(now_file, 'assets', "background", f"c{i+1}.png")
             overlay_path = os.path.join(now_file, character_name, f"{character_name} ({j+1}).png")
                 
             background = Image.open(background_path).convert("RGBA")

@@ -224,12 +224,12 @@ def draw_text_auto(
         
         for config in text_configs_dict[role_name]:
             text = config["text"]
-            position = config["position"]
-            font_color = config["font_color"]
+            position = tuple(config["position"])
+            font_color = tuple(config["font_color"])
             font_size = config["font_size"]
         
             # 使用绝对路径加载字体文件
-            font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "font3.ttf")
+            font_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', "font3.ttf")
             font = ImageFont.truetype(font_path, font_size)
             
             # 计算阴影位置
