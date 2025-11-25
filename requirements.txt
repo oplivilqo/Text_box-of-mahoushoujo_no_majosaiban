@@ -7,3 +7,6 @@ Pillow>=12.0.0
 keyboard>=0.13.5
 pyperclip>=1.11.0
 pywin32>=311
+psutil>=5.9.0
+pilmoji>=2.0.4
+emoji==1.7.0
