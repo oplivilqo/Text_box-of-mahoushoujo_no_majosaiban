@@ -57,23 +57,28 @@ def try_get_image() -> Image.Image | None:
     return None
 
 #将文本剪切进剪贴板
-def cut_all_and_get_text() -> str:
-    """
-    #模拟 Ctrl+A / Ctrl+X 剪切全部文本，并返回剪切得到的内容。
-    #delay: 每步之间的延时（秒），默认0.1秒。
-    """
+def cut_all_and_get_text(select_hotkey: str = 'ctrl+a', cut_hotkey: str = 'ctrl+x', delay: float = 0.2) -> tuple:
     # 备份原剪贴板
-    old_clip = pyperclip.paste()
+    try:
+        old_clip = pyperclip.paste()
+    except Exception:
+        old_clip = ''
 
     # 清空剪贴板，防止读到旧数据
-    pyperclip.copy("")
+    try:
+        pyperclip.copy("")
+    except Exception:
+        pass
 
-    # 发送 Ctrl+A 和 Ctrl+X
-    keyboard.send('ctrl+a')
-    keyboard.send('ctrl+x')
-    time.sleep(0.2)
+    # 发送 Select All 和 Cut
+    keyboard.send(select_hotkey)
+    keyboard.send(cut_hotkey)
+    time.sleep(delay)
 
     # 获取剪切后的内容
-    new_clip = pyperclip.paste()
+    try:
+        new_clip = pyperclip.paste()
+    except Exception:
+        new_clip = ''
 
-    return new_clip
+    return new_clip, old_clip

@@ -46,7 +46,7 @@ def get_foreground_exe_name():
         exe_path = proc.exe()
         return os.path.basename(exe_path)
     except Exception as e:
-        logger.debug("get_foreground_exe_name failed: %s", e)
+        logger.debug("获取前台进程exe名失败: %s", e)
         return None
 
 #清除魔裁缓存文件夹
@@ -59,18 +59,18 @@ def _clear_magic_cut_folder():
             try:
                 os.remove(entry.path)
             except Exception:
-                logger.exception("failed to remove %s", entry.path)
+                logger.exception("删除失败： %s", entry.path)
 
 #统一处理剪贴板操作
 def _perform_keyboard_actions(png_bytes, state: AppState):
     if png_bytes is None:
-        logger.warning("png_bytes is None, nothing to paste/send")
+        logger.warning("png_bytes里没东西")
         return
     try:
         # 把图片写入剪贴板
         clipboard.copy_png_bytes_to_clipboard(png_bytes)
     except Exception:
-        logger.exception("copy to clipboard failed")
+        logger.exception("拷贝进剪贴板失败")
         return
 
     if state.auto_paste:
@@ -88,7 +88,7 @@ def _worker_generate_and_send(text: str, state: AppState):
         if expr is not None:
             state.last_expression = expr
     except Exception:
-        logger.exception("generate_image failed")
+        logger.exception("生成失败")
         png_bytes = None
     finally:
         # 在 keyboard 的线程上下文安全地执行粘贴/发送
@@ -98,30 +98,46 @@ def _worker_generate_and_send(text: str, state: AppState):
 #enter触发处理
 def _on_enter_trigger(state: AppState):
     if state.busy:
-        logger.debug("Busy, ignoring enter trigger")
+        logger.debug("系统繁忙，忽略enter")
         return
-    if state.enable_whitelist:
-        exe = get_foreground_exe_name()
-        if exe not in state.window_whitelist:
-            logger.debug("Foreground exe %s not in whitelist, ignoring", exe)
-            return
+    exe = get_foreground_exe_name()
+    if state.enable_whitelist and exe not in state.window_whitelist:
+        logger.debug("前台exe %s 不在白名单内", exe)
+        keyboard.send('enter')
+        return
     try:
-        text = clipboard.cut_all_and_get_text()
+        select_k = getattr(state, 'select_all_hotkey', 'ctrl+a')
+        cut_k = getattr(state, 'cut_hotkey', 'ctrl+x')
+        delay = getattr(state, 'delay', 0.2)
+        text, old_clip = clipboard.cut_all_and_get_text(select_k, cut_k, delay)
     except Exception:
-        logger.exception("cut_all_and_get_text failed")
+        logger.exception("剪切失败")
+        keyboard.send('enter')
         return
+    #启动后台生成
     state.busy = True
     t = threading.Thread(target=_worker_generate_and_send, args=(text, state), daemon=True)
     t.start()
+
+#用于同步切换角色快捷键和下拉栏的函数
+role_change_callback = None
 
 #切换角色
 def switch_role_by_index(idx: int, state: AppState):
     roles = list(core.mahoshojo.keys())
     if 1 <= idx <= len(roles):
         state.current_role = roles[idx-1]
-        # 异步预生成资源
-        threading.Thread(target=core.generate_and_save_images, args=(state.current_role,), daemon=True).start()
-        logger.info("switched role to %s", state.current_role)
+        # 不再在切换角色时预生成资源（启动时已预处理）
+        logger.info("角色切换： %s", state.current_role)
+        # notify callback if present
+        try:
+            if role_change_callback:
+                try:
+                    role_change_callback(state.current_role)
+                except Exception:
+                    logger.exception('角色切换回传失败')
+        except Exception:
+            logger.exception('未定义回传函数')
         return True
     return False
 
@@ -130,9 +146,9 @@ def set_expression(expr: int, state: AppState):
     state.last_expression = -1
     try:
         state.last_expression = expr
-        logger.info("set expression %s", expr)
+        logger.info("设置表情： %s", expr)
     except Exception:
-        logger.exception("set_expression failed")
+        logger.exception("设置表情失败")
 
 #切换自动粘贴
 def toggle_auto_paste(state: AppState):
@@ -144,7 +160,7 @@ def toggle_auto_paste(state: AppState):
 #切换自动发送
 def toggle_auto_send(state: AppState):
     if not state.auto_paste:
-        logger.info("auto_send requires auto_paste on")
+        logger.info("自动发送需要自动粘贴开启")
         return
     state.auto_send = not state.auto_send
     logger.info("auto_send=%s", state.auto_send)
@@ -162,22 +178,11 @@ def register_hotkeys(state: AppState = None):
     _registered_hotkeys.append(keyboard.add_hotkey('ctrl+t', lambda: switch_role_by_index(13, state)))
     _registered_hotkeys.append(keyboard.add_hotkey('ctrl+y', lambda: switch_role_by_index(14, state)))
 
-    # alt+1..9 设置表情
-    for i in range(1, 10):
-        _registered_hotkeys.append(keyboard.add_hotkey(f'alt+{i}', lambda idx=i: set_expression(idx, state)))
-
-    # 切换
-    _registered_hotkeys.append(keyboard.add_hotkey('ctrl+g', lambda: toggle_auto_paste(state)))
-    _registered_hotkeys.append(keyboard.add_hotkey('ctrl+h', lambda: toggle_auto_send(state)))
-
     # 清缓存
     _registered_hotkeys.append(keyboard.add_hotkey('ctrl+tab', lambda: _clear_magic_cut_folder()))
-
-    # show current
-    _registered_hotkeys.append(keyboard.add_hotkey('ctrl+0', lambda: logger.info('current role: %s', state.current_role)))
     
     #启动！！
-    _registered_hotkeys.append(keyboard.add_hotkey('enter', lambda: _on_enter_trigger(state), suppress=False))
+    _registered_hotkeys.append(keyboard.add_hotkey('enter', lambda: _on_enter_trigger(state), suppress=True))
 
     return _registered_hotkeys
 
@@ -187,7 +192,7 @@ def unregister_hotkeys():
         try:
             keyboard.remove_hotkey(hk)
         except Exception:
-            logger.exception("remove_hotkey failed for %s", hk)
+            logger.exception("注销热键失败： %s", hk)
     _registered_hotkeys.clear()
 
 

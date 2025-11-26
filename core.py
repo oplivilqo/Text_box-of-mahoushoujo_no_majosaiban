@@ -151,45 +151,68 @@ def get_magic_cut_folder():
     os.makedirs(magic_cut_folder, exist_ok=True)
     return magic_cut_folder
 
-#预处理资源文件并保存到文件夹
-def prepare_resources():
-    magic_cut_folder=get_magic_cut_folder()
+#预处理资源文件并保存到文件夹（新增了回传功能~）
+def prepare_resources(callback=None):
+    #回传~
+    def _cb(msg):
+        try:
+            if callback:
+                callback(msg)
+        except Exception:
+            logger.exception('callback error')
+    magic_cut_folder = get_magic_cut_folder()
+
     for character_name in mahoshojo.keys():
-        logger.info("正在预处理："+character_name)
-        emotion_count= mahoshojo[character_name]["emotion_count"]
-        if sum(1 for entry in os.scandir(magic_cut_folder) if entry.is_file() and entry.name.startswith(character_name))==16*emotion_count:
-            logger.info("已存在，跳过")
+        _cb(f"正在预处理：{character_name}")
+        logger.info("正在预处理：%s", character_name)
+        emotion_count = mahoshojo[character_name]["emotion_count"]
+        existing_count = sum(1 for entry in os.scandir(magic_cut_folder) if entry.is_file() and entry.name.startswith(character_name))
+        if existing_count == 16 * emotion_count:
+            _cb("已存在，跳过")
+            logger.info("已存在，跳过 %s", character_name)
             continue
         else:
             for entry in os.scandir(magic_cut_folder):
                 if entry.is_file() and entry.name.startswith(character_name):
-                    os.remove(entry.path)
-                    logger.info("删除旧文件："+entry.name)
+                    try:
+                        os.remove(entry.path)
+                        _cb(f"删除旧文件：{entry.name}")
+                        logger.info("删除旧文件：%s", entry.name)
+                    except Exception:
+                        logger.exception("删除文件失败: %s", entry.path)
         for i in range(16):
             for j in range(emotion_count):
-                background_path=get_resource_path(os.path.join('background',f"c{i+1}.png"))
-                overlay_path=get_resource_path(os.path.join(character_name, f"{character_name} ({j+1}).png"))
+                background_path = get_resource_path(os.path.join('background', f"c{i+1}.png"))
+                overlay_path = get_resource_path(os.path.join(character_name, f"{character_name} ({j+1}).png"))
 
                 try:
                     background = Image.open(background_path).convert("RGBA")
                 except Exception as e:
-                    logger.warning(f"无法打开背景图像文件 {background_path} ：{e}")
-                    continue  # 跳过该图像文件
-                
+                    _cb(f"无法打开背景图像文件 {background_path} ：{e}")
+                    logger.exception("无法打开背景图像文件 %s : %s", background_path, e)
+                    continue
+
                 try:
                     overlay = Image.open(overlay_path).convert("RGBA")
                 except Exception as e:
-                    logger.warning(f"无法打开叠加图像文件 {overlay_path} ：{e}")
-                    continue  # 跳过该图像文件
+                    _cb(f"无法打开叠加图像文件 {overlay_path} ：{e}")
+                    logger.exception("无法打开叠加图像文件 %s : %s", overlay_path, e)
+                    continue
 
                 img_num = j * 16 + i + 1
                 result = background.copy()
                 result.paste(overlay, (0, 134), overlay)
-                
+
                 # 使用绝对路径保存生成的图片
                 save_path = os.path.join(magic_cut_folder, f"{character_name} ({img_num}).jpg")
-                result.convert("RGB").save(save_path)
-        logger.info("预处理完毕")
+                try:
+                    result.convert("RGB").save(save_path)
+                    _cb(f"已生成：{os.path.basename(save_path)}")
+                    logger.info("已生成：%s", save_path)
+                except Exception:
+                    logger.exception("保存文件失败: %s", save_path)
+        _cb(f"预处理完毕：{character_name}")
+        logger.info("预处理完毕：%s", character_name)
 
 #不重复的随机表情生成
 def get_random_expression(character_name,last_value=-1,expression=-1):

@@ -1,4 +1,4 @@
-<div align="center">
+8<div align="center">
 
 # 🎭魔法少女的魔女裁判文本框脚本
 
@@ -27,6 +27,10 @@
 5.增加了方便的build脚本，生成方式：pyinstaller build_onefile.spec 不知道为啥没办法包含pilemoji库，导致无法生成emoji，建议还是运行py文件
 
 6.增加了切换自动发送/粘贴功能，详情见控制台
+
+7.重构了main.py，完善了安全性，把main.py中的功能拆分到了多个模块中（clipboard,hotkeys,core）
+
+8.用tkinter实现了GUI，详见gui.py，现在main.py不再维护
 
 ## 功能特色
 
