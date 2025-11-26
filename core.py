@@ -4,9 +4,12 @@ import sys
 import random
 import os
 import getpass
+import logging
 from PIL import Image
 from text_fit_draw import draw_text_auto
 from image_fit_paste import paste_image_auto
+
+logger = logging.getLogger(__name__)
 
 #全局变量区
 # 角色配置字典
@@ -152,16 +155,16 @@ def get_magic_cut_folder():
 def prepare_resources():
     magic_cut_folder=get_magic_cut_folder()
     for character_name in mahoshojo.keys():
-        print("正在预处理："+character_name)
+        logger.info("正在预处理："+character_name)
         emotion_count= mahoshojo[character_name]["emotion_count"]
         if sum(1 for entry in os.scandir(magic_cut_folder) if entry.is_file() and entry.name.startswith(character_name))==16*emotion_count:
-            print("已存在，跳过")
+            logger.info("已存在，跳过")
             continue
         else:
             for entry in os.scandir(magic_cut_folder):
                 if entry.is_file() and entry.name.startswith(character_name):
                     os.remove(entry.path)
-                    print("删除旧文件："+entry.name)
+                    logger.info("删除旧文件："+entry.name)
         for i in range(16):
             for j in range(emotion_count):
                 background_path=get_resource_path(os.path.join('background',f"c{i+1}.png"))
@@ -170,13 +173,13 @@ def prepare_resources():
                 try:
                     background = Image.open(background_path).convert("RGBA")
                 except Exception as e:
-                    print(f"无法打开背景图像文件 {background_path} ：{e}")
+                    logger.warning(f"无法打开背景图像文件 {background_path} ：{e}")
                     continue  # 跳过该图像文件
                 
                 try:
                     overlay = Image.open(overlay_path).convert("RGBA")
                 except Exception as e:
-                    print(f"无法打开叠加图像文件 {overlay_path} ：{e}")
+                    logger.warning(f"无法打开叠加图像文件 {overlay_path} ：{e}")
                     continue  # 跳过该图像文件
 
                 img_num = j * 16 + i + 1
@@ -186,7 +189,7 @@ def prepare_resources():
                 # 使用绝对路径保存生成的图片
                 save_path = os.path.join(magic_cut_folder, f"{character_name} ({img_num}).jpg")
                 result.convert("RGB").save(save_path)
-        print("预处理完毕")
+        logger.info("预处理完毕")
 
 #不重复的随机表情生成
 def get_random_expression(character_name,last_value=-1,expression=-1):
@@ -196,7 +199,7 @@ def get_random_expression(character_name,last_value=-1,expression=-1):
     if expression != -1:
         if expression < 1 or expression > mahoshojo[character_name]["emotion_count"]:
             expression = (expression - 1) % mahoshojo[character_name]["emotion_count"] + 1
-            print(f"表情值超出范围，已调整为有效值：{expression}")
+            logger.info(f"表情值超出范围，已调整为有效值：{expression}")
         bg=random.randint(1,16)
         img_num = (expression - 1) * 16 + bg
         return os.path.join(get_magic_cut_folder(), f"{character_name} ({img_num}).jpg"),expression
@@ -207,14 +210,14 @@ def get_random_expression(character_name,last_value=-1,expression=-1):
         expression=random.randint(1, mahoshojo[character_name]["emotion_count"])
         attempts += 1
     if attempts >= max_attempts:
-        print("达到最大尝试次数，返回随机表情")
+        logger.warning("达到最大尝试次数，返回随机表情")
         expression = random.randint(1, mahoshojo[character_name]["emotion_count"])
     return os.path.join(get_magic_cut_folder(), f"{character_name} ({(expression - 1) * 16 + random.randint(1,16)}).jpg"),expression
 
 #图片生成
 def generate_image(text,content_image,role_name,font_path='font3.ttf',last_value=-1,expression=-1):
     if not text and content_image is None:
-        print("没有文本/图像")
+        logger.warning("没有文本/图像")
         return None, expression
     png_bytes=None
     address, expression = get_random_expression(role_name,last_value,expression)
@@ -227,7 +230,7 @@ def generate_image(text,content_image,role_name,font_path='font3.ttf',last_value
     #处理图片
     if content_image is not None:
         try:
-            print("检测到图片")
+            logger.info("检测到图片")
             png_bytes = paste_image_auto(
                 image_source=address,
                 image_overlay=None,
@@ -243,11 +246,11 @@ def generate_image(text,content_image,role_name,font_path='font3.ttf',last_value
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
         except Exception as e:
-            print("图片处理出错："+str(e))
+            logger.error("图片处理出错："+str(e))
             return None, expression
     elif text:
         try:
-            print('检测到文本：'+text)
+            logger.info('检测到文本：'+text)
             png_bytes = draw_text_auto(
                 image_source=address,
                 image_overlay=None,
@@ -263,6 +266,6 @@ def generate_image(text,content_image,role_name,font_path='font3.ttf',last_value
                 text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
         except Exception as e:
-            print("文本处理出错："+str(e))
+            logger.error("文本处理出错："+str(e))
             return None, expression
     return png_bytes, expression

@@ -6,6 +6,9 @@ import pyperclip
 import io
 from PIL import Image
 import win32clipboard
+import logging
+
+logger = logging.getLogger(__name__)
 
 #将图片复制进剪贴板
 def copy_png_bytes_to_clipboard(png_bytes: bytes):
@@ -45,7 +48,7 @@ def try_get_image() -> Image.Image | None:
                 image = Image.open(io.BytesIO(header + bmp_data))
                 return image
     except Exception as e:
-        print("无法从剪贴板获取图像：", e)
+        logger.exception("无法从剪贴板获取图像：%s", e)
     finally:
         try:
             win32clipboard.CloseClipboard()
