@@ -2,7 +2,7 @@
 # Usage: Open PowerShell in repo root and run: .\build.ps1
 
 param(
-    [string]$SpecFile = 'gui.spec'
+    [string]$SpecFile = 'build.spec'
 )
 
 Write-Host "Starting PyInstaller build (one-folder) using spec: $SpecFile"

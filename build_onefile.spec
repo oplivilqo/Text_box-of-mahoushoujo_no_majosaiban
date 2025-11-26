@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+# PyInstaller spec file for onefile build (no console window)
 
 a = Analysis(
     ['gui.py'],
@@ -29,7 +29,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
