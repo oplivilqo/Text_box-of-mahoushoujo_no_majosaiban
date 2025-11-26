@@ -1,81 +1,38 @@
-# -*- mode: python -*-
-# PyInstaller spec for building the GUI application (one-folder / onedir).
-# This spec collects resource files (background, character folders, font) and packages gui.py.
+# -*- mode: python ; coding: utf-8 -*-
 
-block_cipher = None
-
-import sys
-import os
-
-# Add current directory to sys.path so we can import core during spec parsing
-sys.path.insert(0, os.path.abspath('.'))
-
-import core
-
-# collect data files (tuples of (src, destdir))
-datas = []
-
-# include font if present
-if os.path.exists('font3.ttf'):
-    datas.append(('font3.ttf', '.'))
-
-# include background folder
-if os.path.isdir('background'):
-    for root, _, files in os.walk('background'):
-        for f in files:
-            src = os.path.join(root, f)
-            rel = os.path.relpath(src, 'background')
-            dest = os.path.join('background', rel)
-            datas.append((src, dest))
-
-# include character folders defined in core.mahoshojo
-for ch in core.mahoshojo.keys():
-    if os.path.isdir(ch):
-        for root, _, files in os.walk(ch):
-            for f in files:
-                src = os.path.join(root, f)
-                rel = os.path.relpath(src, ch)
-                dest = os.path.join(ch, rel)
-                datas.append((src, dest))
-
-# Analysis
-from PyInstaller.building.build_main import Analysis, PYZ, EXE, COLLECT
 
 a = Analysis(
     ['gui.py'],
-    pathex=['.'],
+    pathex=[],
     binaries=[],
-    datas=datas,
+    datas=[('font3.ttf', '.'), ('background', 'background'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\alisa', 'alisa'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\anan', 'anan'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\background', 'background'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\coco', 'coco'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\ema', 'ema'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\hanna', 'hanna'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\hiro', 'hiro'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\mago', 'mago'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\meruru', 'meruru'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\miria', 'miria'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\nanoka', 'nanoka'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\noa', 'noa'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\reia', 'reia'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\sherri', 'sherri'), ('D:\\user\\document\\Text_box-of-mahoushoujo_no_majosaiban\\yuki', 'yuki')],
     hiddenimports=['keyboard', 'pyperclip', 'win32clipboard'],
     hookspath=[],
+    hooksconfig={},
     runtime_hooks=[],
     excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
+    noarchive=False,
+    optimize=0,
 )
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='gui',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    name='gui',
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
 )
