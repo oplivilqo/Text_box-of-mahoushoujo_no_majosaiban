@@ -5,6 +5,7 @@ import random
 import os
 import getpass
 import logging
+import time
 from PIL import Image
 from text_fit_draw import draw_text_auto
 from image_fit_paste import paste_image_auto
@@ -301,56 +302,68 @@ def generate_image(text,content_image,role_name,font_path='font3.ttf',last_value
         logger.warning("没有文本/图像")
         return None, expression
     png_bytes=None
-    address, expression = get_random_expression(role_name,last_value,expression)
-    
-    # 文本框左上角坐标 (x, y), 同时适用于图片框
-    TEXT_BOX_TOPLEFT= (mahoshojo_postion[0], mahoshojo_postion[1])
-    # 文本框右下角坐标 (x, y), 同时适用于图片框
-    IMAGE_BOX_BOTTOMRIGHT= (mahoshojo_over[0], mahoshojo_over[1])
-    
-    #处理图片
-    if content_image is not None:
-        try:
-            logger.info("检测到图片")
-            # 使用缓存加载
-            base_image = load_image_cached(address)
-            png_bytes = paste_image_auto(
-                image_source=base_image,  # 直接传入Image对象
-                image_overlay=None,
-                top_left=TEXT_BOX_TOPLEFT,
-                bottom_right=IMAGE_BOX_BOTTOMRIGHT,
-                content_image=content_image,
-                align="center",
-                valign="middle",
-                padding=12,
-                allow_upscale=True, 
-                keep_alpha=True,      # 使用内容图 alpha 作为蒙版 
-                role_name=role_name,  # 传递角色名称
-                text_configs_dict=text_configs_dict,  # 传递文字配置字典
+    # 记录开始时间并在返回前记录耗时到日志
+    start_ts = time.perf_counter()
+    try:
+        address, expression = get_random_expression(role_name,last_value,expression)
+
+        # 文本框左上角坐标 (x, y), 同时适用于图片框
+        TEXT_BOX_TOPLEFT= (mahoshojo_postion[0], mahoshojo_postion[1])
+        # 文本框右下角坐标 (x, y), 同时适用于图片框
+        IMAGE_BOX_BOTTOMRIGHT= (mahoshojo_over[0], mahoshojo_over[1])
+        
+        #处理图片
+        if content_image is not None:
+            try:
+                logger.info("检测到图片")
+                # 使用缓存加载
+                base_image = load_image_cached(address)
+                png_bytes = paste_image_auto(
+                    image_source=base_image,  # 直接传入Image对象
+                    image_overlay=None,
+                    top_left=TEXT_BOX_TOPLEFT,
+                    bottom_right=IMAGE_BOX_BOTTOMRIGHT,
+                    content_image=content_image,
+                    align="center",
+                    valign="middle",
+                    padding=12,
+                    allow_upscale=True, 
+                    keep_alpha=True,      # 使用内容图 alpha 作为蒙版 
+                    role_name=role_name,  # 传递角色名称
+                    text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
-        except Exception as e:
-            logger.error("图片处理出错："+str(e))
-            return None, expression
-    elif text:
-        try:
-            logger.info('检测到文本：'+text)
-            # 使用缓存加载
-            base_image = load_image_cached(address)
-            png_bytes = draw_text_auto(
-                image_source=base_image,  # 直接传入Image对象
-                image_overlay=None,
-                top_left=TEXT_BOX_TOPLEFT,
-                bottom_right=IMAGE_BOX_BOTTOMRIGHT,
-                text=text,
-                align="left",
-                valign='top' ,
-                color=(255, 255, 255), 
-                max_font_height=145,        # 例如限制最大字号高度为 145 像素
-                font_path=font_path,
-                role_name=role_name,  # 传递角色名称
-                text_configs_dict=text_configs_dict,  # 传递文字配置字典
+            except Exception as e:
+                logger.error("图片处理出错：%s", e)
+                return None, expression
+        elif text:
+            try:
+                logger.info('检测到文本：%s', text)
+                # 使用缓存加载
+                base_image = load_image_cached(address)
+                png_bytes = draw_text_auto(
+                    image_source=base_image,  # 直接传入Image对象
+                    image_overlay=None,
+                    top_left=TEXT_BOX_TOPLEFT,
+                    bottom_right=IMAGE_BOX_BOTTOMRIGHT,
+                    text=text,
+                    align="left",
+                    valign='top' ,
+                    color=(255, 255, 255), 
+                    max_font_height=145,        # 例如限制最大字号高度为 145 像素
+                    font_path=font_path,
+                    role_name=role_name,  # 传递角色名称
+                    text_configs_dict=text_configs_dict,  # 传递文字配置字典
                 )
-        except Exception as e:
-            logger.error("文本处理出错："+str(e))
-            return None, expression
-    return png_bytes, expression
+            except Exception as e:
+                logger.error("文本处理出错：%s", e)
+                return None, expression
+
+        return png_bytes, expression
+    finally:
+        end_ts = time.perf_counter()
+        duration_ms = (end_ts - start_ts) * 1000.0
+        try:
+            logger.info("生成信息: role=%s expression=%s mode=%s duration=%.1fms", role_name, expression, 'image' if content_image is not None else 'text', duration_ms)
+        except Exception:
+            # 保底，不影响主流程
+            logger.info("生成耗时: %.1fms", duration_ms)
