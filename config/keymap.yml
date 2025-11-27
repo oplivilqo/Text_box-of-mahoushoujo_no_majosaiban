@@ -132,7 +132,7 @@ darwin:
 #      param: 9
 
   # 功能键
-  start_generate: "<ctrl>+enter"
+  start_generate: "<cmd>+e"
   delete_cache: "<ctrl>+d"
   quit: "<ctrl>+q"
   pause: "<ctrl>+r"
