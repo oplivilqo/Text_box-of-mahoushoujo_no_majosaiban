@@ -41,7 +41,7 @@ class ManosabaTextBox:
         self.AUTO_SEND_IMAGE = True  # 自动发送图片
 
         self.kbd_controller = Controller()  # 键盘控制器
-        self.hotkey_listener = None # 全局热键监听器
+        self.hotkey_listener = None  # 全局热键监听器
 
         # 初始化路径
         self.BASE_PATH = ""  # 基础路径
@@ -59,7 +59,7 @@ class ManosabaTextBox:
         self.load_configs()
 
         # 状态变量
-        self.active = True # 程序激活状态
+        self.active = True  # 程序激活状态
         self.emote = None  # 表情索引
         self.value_1 = -1  # 我也不知道这是啥我也不敢动
         self.current_character_index = 3  # 当前角色索引，默认第三个角色（sherri）
@@ -150,12 +150,21 @@ class ManosabaTextBox:
             chara = self.character_list[self.current_character_index - 1]
             return self.mahoshojo[chara]['full_name'] if full_name else chara
 
-    def switch_character(self, index: int) -> bool:
+    def switch_character(self, index: int) -> str:
         """切换到指定索引的角色"""
         if 0 < index <= len(self.character_list):
             self.current_character_index = index
-            return True
-        return False
+            return f"[green]已切换角色: {self.get_character()}[/green]"
+        return "[red]切换角色失败[/red]"
+
+    def switch_emote(self, emote_index: int) -> str:
+        """切换到指定表情索引"""
+        character_name = self.get_character()
+        emotion_cnt = self.mahoshojo[character_name]["emotion_count"]
+        if 1 <= emote_index <= emotion_cnt:
+            self.emote = emote_index
+            return f"[green]已切换表情: {emote_index}[/green]"
+        return "[red]切换表情失败[/red]"
 
     def get_current_font(self) -> str:
         """返回当前角色的字体文件绝对路径"""
@@ -370,7 +379,6 @@ class ManosabaTextBox:
                     check=True
                 )
                 name = result.stdout.strip().lower()
-                print (f"Active process: {name}")
                 return name in wl
             except subprocess.SubprocessError:
                 return False
@@ -453,7 +461,8 @@ class ManosabaTextBox:
                 self.kbd_controller.press(Key.enter)
                 self.kbd_controller.release(Key.enter)
 
-        return f"成功生成图片！角色: {character_name}, 表情: {1 + (self.value_1 // 16)}"
+        return (f"生成成功！角色: {character_name}, 表情: {1 + (self.value_1 // 16)}，"
+                f"内容：{'[图片]'if image else text[:20]}{'...' if len(text) > 20 else ''}")
 
     def toggle_active(self):
         """切换程序激活状态"""
@@ -465,24 +474,62 @@ class ManosabaTextBox:
         """设置全局热键监听器"""
         keymap = self.keymap
         if PLATFORM == "darwin":
-            self.hotkey_listener = GlobalHotKeys({
+            hotkeys = {
                 keymap['start_generate']: lambda: print(self.start()),
                 keymap['pause']: self.toggle_active,
                 keymap['delete_cache']: self.delete,
                 keymap['quit']: lambda: self.hotkey_listener.stop()
+            }
+            hotkeys.update({
+                mapping['key']: (lambda param=mapping['param']: print(self.switch_character(param)))
+                for mapping in keymap['switch_character']
             })
+            hotkeys.update({
+                mapping['key']: (lambda param=mapping['param']: print(self.switch_emote(param)))
+                for mapping in keymap['get_expression']
+            })
+            hotkeys[keymap['show_current_character']] = lambda: print(self.get_character())
+            self.hotkey_listener = GlobalHotKeys(hotkeys)
             self.hotkey_listener.start()
-            self.hotkey_listener.join() # 保持程序运行，直到热键监听器停止
+            print("[green]全局热键监听器已启动[/green]")
+            self.hotkey_listener.join()  # 保持程序运行，直到热键监听器停止
         elif PLATFORM.startswith('win'):
+            for mapping in keymap['switch_character']:
+                keyboard.add_hotkey(mapping['key'], lambda param=mapping['param']: print(self.switch_character(param)))
+            for mapping in keymap['get_expression']:
+                keyboard.add_hotkey(mapping['key'], lambda param=mapping['param']: print(self.switch_emote(param)))
+            keyboard.add_hotkey(keymap['show_current_character'], lambda: print(self.get_character()))
             keyboard.add_hotkey(keymap['start_generate'], lambda: print(self.start()))
             keyboard.add_hotkey(keymap['pause'], self.toggle_active)
             keyboard.add_hotkey(keymap['delete_cache'], self.delete)
             keyboard.add_hotkey(keymap['quit'], lambda: os._exit(0))
+            print("[green]全局热键监听器已启动[/green]")
             keyboard.wait('esc')  # 保持程序运行，直到按下 'esc' 键退出
 
     def run(self):
         """运行主程序"""
+        print("魔裁文本框生成器 v1.2.0")
+        print(f"\n定义的角色列表: ")
+        for idx, chara in enumerate(self.mahoshojo):
+            print(f"  {idx+1}: {self.mahoshojo[chara]['full_name']} ({chara})")
+        print("\n定义的快捷键列表")
+        for mapping in self.keymap['switch_character']:
+            print(f"  [cyan]{mapping['key']}[/cyan]: 切换角色 {mapping['param']}")
+        for mapping in self.keymap['get_expression']:
+            print(f"  [cyan]{mapping['key']}[/cyan]: 切换表情 {mapping['param']}")
+        print(f"  {self.keymap['show_current_character']}: 显示当前角色")
+        print(f"""
+  {self.keymap['start_generate']}: 生成图片
+  {self.keymap['quit']}: 退出程序
+  {self.keymap['pause']}: 暂停/激活程序
+  {self.keymap['delete_cache']}: 清除缓存图片
+      
+程序说明：
+这个版本的程序占用体积较小，但是需要预加载，初次更换角色后需要等待数秒才能正常使用，望周知（
+按Tab可清除生成图片，降低占用空间，但清除图片后需重启才能正常使用
+感谢各位的支持""")
         self.setup_global_hotkeys()
+
 
 if __name__ == "__main__":
     app = ManosabaTextBox()

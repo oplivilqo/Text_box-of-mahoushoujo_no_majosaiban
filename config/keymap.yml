@@ -4,61 +4,58 @@
 # Keyboard库格式，参考：https://keyboard.readthedocs.io/en/latest/index.html
 win32:
   # 角色切换
-#  switch_character:
-#    - key: "ctrl+1"
-#      param: 1
-#    - key: "ctrl+2"
-#      param: 2
-#    - key: "ctrl+3"
-#      param: 3
-#    - key: "ctrl+4"
-#      param: 4
-#    - key: "ctrl+5"
-#      param: 5
-#    - key: "ctrl+6"
-#      param: 6
-#    - key: "ctrl+7"
-#      param: 7
-#    - key: "ctrl+8"
-#      param: 8
-#    - key: "ctrl+9"
-#      param: 9
-#    - key: "ctrl+q"
-#      param: 10
-#    - key: "ctrl+e"
-#      param: 11
-#    - key: "ctrl+r"
-#      param: 12
-#    - key: "ctrl+t"
-#      param: 13
-#    - key: "ctrl+y"
-#      param: 14
-#    - key: "ctrl+u"
-#      param: 15
+  switch_character:
+    - key: "ctrl+shift+1"
+      param: 1
+    - key: "ctrl+shift+2"
+      param: 2
+    - key: "ctrl+shift+3"
+      param: 3
+    - key: "ctrl+shift+4"
+      param: 4
+    - key: "ctrl+shift+5"
+      param: 5
+    - key: "ctrl+shift+6"
+      param: 6
+    - key: "ctrl+shift+7"
+      param: 7
+    - key: "ctrl+shift+8"
+      param: 8
+    - key: "ctrl+shift+9"
+      param: 9
+    - key: "ctrl+shift+q"
+      param: 10
+    - key: "ctrl+shift+e"
+      param: 11
+    - key: "ctrl+shift+r"
+      param: 12
+    - key: "ctrl+shift+t"
+      param: 13
+    - key: "ctrl+shift+y"
+      param: 14
   # 显示当前角色
-#  show_current_character:
-#    - key: "ctrl+0"
+  show_current_character: "ctrl+shift+0"
 
   # 表情切换
-#  get_expression:
-#    - key: "alt+1"
-#      param: 1
-#    - key: "alt+2"
-#      param: 2
-#    - key: "alt+3"
-#      param: 3
-#    - key: "alt+4"
-#      param: 4
-#    - key: "alt+5"
-#      param: 5
-#    - key: "alt+6"
-#      param: 6
-#    - key: "alt+7"
-#      param: 7
-#    - key: "alt+8"
-#      param: 8
-#    - key: "alt+9"
-#      param: 9
+  get_expression:
+    - key: "ctrl+alt+1"
+      param: 1
+    - key: "ctrl+alt+2"
+      param: 2
+    - key: "ctrl+alt+3"
+      param: 3
+    - key: "ctrl+alt+4"
+      param: 4
+    - key: "ctrl+alt+5"
+      param: 5
+    - key: "ctrl+alt+6"
+      param: 6
+    - key: "ctrl+alt+7"
+      param: 7
+    - key: "ctrl+alt+8"
+      param: 8
+    - key: "ctrl+alt+9"
+      param: 9
 
   # 启动生成
   start_generate: "ctrl+e"
@@ -74,65 +71,62 @@ win32:
 # pynput格式，参考：https://pynput.readthedocs.io/en/latest/keyboard.html#pynput.keyboard.Key
 darwin:
   # 角色切换
-#  switch_character:
-#    - key: "<ctrl>+1"
-#      param: 1
-#    - key: "<ctrl>+2"
-#      param: 2
-#    - key: "<ctrl>+3"
-#      param: 3
-#    - key: "<ctrl>+4"
-#      param: 4
-#    - key: "<ctrl>+5"
-#      param: 5
-#    - key: "<ctrl>+6"
-#      param: 6
-#    - key: "<ctrl>+7"
-#      param: 7
-#    - key: "<ctrl>+8"
-#      param: 8
-#    - key: "<ctrl>+9"
-#      param: 9
-#    - key: "<ctrl>+q"
-#      param: 10
-#    - key: "<ctrl>+e"
-#      param: 11
-#    - key: "<ctrl>+r"
-#      param: 12
-#    - key: "<ctrl>+t"
-#      param: 13
-#    - key: "<ctrl>+y"
-#      param: 14
-#    - key: "<ctrl>+u"
-#      param: 15
+  switch_character:
+    - key: "<ctrl>+<shift>+1"
+      param: 1
+    - key: "<ctrl>+<shift>+2"
+      param: 2
+    - key: "<ctrl>+<shift>+3"
+      param: 3
+    - key: "<ctrl>+<shift>+4"
+      param: 4
+    - key: "<ctrl>+<shift>+5"
+      param: 5
+    - key: "<ctrl>+<shift>+6"
+      param: 6
+    - key: "<ctrl>+<shift>+7"
+      param: 7
+    - key: "<ctrl>+<shift>+8"
+      param: 8
+    - key: "<ctrl>+<shift>+9"
+      param: 9
+    - key: "<ctrl>+<shift>+q"
+      param: 10
+    - key: "<ctrl>+<shift>+e"
+      param: 11
+    - key: "<ctrl>+<shift>+r"
+      param: 12
+    - key: "<ctrl>+<shift>+t"
+      param: 13
+    - key: "<ctrl>+<shift>+y"
+      param: 14
 
   # 显示当前角色
-#  show_current_character:
-#    - key: "<ctrl>+0"
+  show_current_character: "<ctrl>+<shift>+0"
 
   # 表情切换 (Alt+数字键)
-#  get_expression:
-#    - key: "<alt>+1"
-#      param: 1
-#    - key: "<alt>+2"
-#      param: 2
-#    - key: "<alt>+3"
-#      param: 3
-#    - key: "<alt>+4"
-#      param: 4
-#    - key: "<alt>+5"
-#      param: 5
-#    - key: "<alt>+6"
-#      param: 6
-#    - key: "<alt>+7"
-#      param: 7
-#    - key: "<alt>+8"
-#      param: 8
-#    - key: "<alt>+9"
-#      param: 9
+  get_expression:
+    - key: "<ctrl>+<alt>+1"
+      param: 1
+    - key: "<ctrl>+<alt>+2"
+      param: 2
+    - key: "<ctrl>+<alt>+3"
+      param: 3
+    - key: "<ctrl>+<alt>+4"
+      param: 4
+    - key: "<ctrl>+<alt>+5"
+      param: 5
+    - key: "<ctrl>+<alt>+6"
+      param: 6
+    - key: "<ctrl>+<alt>+7"
+      param: 7
+    - key: "<ctrl>+<alt>+8"
+      param: 8
+    - key: "<ctrl>+<alt>+9"
+      param: 9
 
   # 功能键
   start_generate: "<cmd>+e"
   delete_cache: "<ctrl>+d"
-  quit: "<ctrl>+q"
-  pause: "<ctrl>+r"
+  quit: "<esc>"
+  pause: "<ctrl>+<cmd>+r"
