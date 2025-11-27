@@ -20,13 +20,14 @@ class ManosabaGUI:
         # 预览相关
         self.preview_image = None
         self.preview_photo = None
-        self.preview_size = (400, 300)  # 固定预览大小
+        self.preview_size = (700, 525)  # 默认预览大小，接近窗口宽度
         
         # 热键监听
         self.hotkey_listener = None
         
         self.setup_gui()
         self.setup_hotkeys()
+        self.root.bind('<Configure>', self.on_window_resize)
         self.update_preview()
     
     def setup_gui(self):
@@ -115,12 +116,12 @@ class ManosabaGUI:
         preview_frame = ttk.LabelFrame(main_frame, text="预览", padding="5")
         preview_frame.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
         
-        # 预览图片在上 - 使用固定大小的Frame来容纳预览图
+        # 预览图片在上 - 使用可调整大小的Frame来容纳预览图
         preview_image_frame = ttk.Frame(preview_frame)
-        preview_image_frame.grid(row=0, column=0, padx=5, pady=5, sticky=(tk.W, tk.E))
+        preview_image_frame.grid(row=0, column=0, padx=5, pady=5, sticky=(tk.W, tk.E, tk.N, tk.S))
         
         self.preview_label = ttk.Label(preview_image_frame)
-        self.preview_label.pack(expand=True)
+        self.preview_label.pack(expand=True, fill=tk.BOTH)
         
         # 预览信息在下 - 使用Label而不是Text，节省空间
         self.preview_info_var = tk.StringVar(value="预览信息将显示在这里")
@@ -147,6 +148,26 @@ class ManosabaGUI:
         self.root.rowconfigure(0, weight=1)
         main_frame.rowconfigure(4, weight=1)
         preview_frame.columnconfigure(0, weight=1)
+        preview_frame.rowconfigure(0, weight=1)
+    
+    # 修改：窗口大小变化处理函数，让预览图宽度基本与窗口宽度一致
+    def on_window_resize(self, event):
+        """处理窗口大小变化事件"""
+        # 只响应主窗口的大小变化，避免子组件触发事件
+        if event.widget == self.root:
+            # 获取窗口当前宽度
+            window_width = self.root.winfo_width()
+            
+            # 计算新的预览图尺寸，让宽度基本与窗口宽度一致
+            # 减去一些边距（左右各20像素）
+            new_width = max(200, window_width - 40)
+            # 保持3:4的比例（宽:高），这是常见的图片比例
+            new_height = int(new_width * 0.75)
+            
+            # 只有当尺寸发生显著变化时才更新预览，避免频繁更新
+            if abs(new_width - self.preview_size[0]) > 30 or abs(new_height - self.preview_size[1]) > 20:
+                self.preview_size = (new_width, new_height)
+                self.update_preview()
     
     def setup_hotkeys(self):
         """设置全局热键"""
