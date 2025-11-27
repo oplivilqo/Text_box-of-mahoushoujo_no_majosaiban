@@ -192,7 +192,7 @@ def prepare_resources(callback=None):
             if callback:
                 callback(msg)
         except Exception:
-            logger.exception('callback error')
+            logger.exception('回传错误')
     magic_cut_folder = get_magic_cut_folder()
 
     for character_name in mahoshojo.keys():
@@ -215,7 +215,7 @@ def prepare_resources(callback=None):
                         logger.exception("删除文件失败: %s", entry.path)
         for i in range(16):
             for j in range(emotion_count):
-                # 更新为新的目录结构
+                #更新为新的目录结构
                 background_path = get_resource_path(os.path.join('assets', 'background', f"c{i+1}.png"))
                 overlay_path = get_resource_path(os.path.join('assets', 'chara', character_name, f"{character_name} ({j+1}).png"))
 
@@ -237,7 +237,6 @@ def prepare_resources(callback=None):
                 result = background.copy()
                 result.paste(overlay, (0, 134), overlay)
 
-                # 使用绝对路径保存生成的图片
                 save_path = os.path.join(magic_cut_folder, f"{character_name} ({img_num}).jpg")
                 try:
                     result.convert("RGB").save(save_path)
@@ -260,11 +259,11 @@ def preheat_cache():
         return
     
     magic_cut_folder = get_magic_cut_folder()
-    # 只预加载每个角色的前几张图片，避免占用过多内存
+    #只预加载每个角色的前几张图片，避免占用过多内存
     for character_name in mahoshojo.keys():
         emotion_count = mahoshojo[character_name]["emotion_count"]
-        # 预加载每个表情的第一张（共emotion_count张）
-        for j in range(min(emotion_count, 3)):  # 限制预加载数量
+        #预加载每个表情的第一张
+        for j in range(min(emotion_count, 3)):  #限制预加载数量
             img_num = j * 16 + 1
             image_path = os.path.join(magic_cut_folder, f"{character_name} ({img_num}).jpg")
             if os.path.exists(image_path):

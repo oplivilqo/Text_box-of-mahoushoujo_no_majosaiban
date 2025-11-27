@@ -112,7 +112,7 @@ def _on_enter_trigger(state: AppState):
     try:
         select_k = getattr(state, 'select_all_hotkey', 'ctrl+a')
         cut_k = getattr(state, 'cut_hotkey', 'ctrl+x')
-        delay = getattr(state, 'delay', 0.2)
+        delay = getattr(state, 'delay', 0.08)
         text, old_clip = clipboard.cut_all_and_get_text(select_k, cut_k, delay)
         content_image = clipboard.try_get_image()
     except Exception:
@@ -132,9 +132,7 @@ def switch_role_by_index(idx: int, state: AppState):
     roles = list(core.mahoshojo.keys())
     if 1 <= idx <= len(roles):
         state.current_role = roles[idx-1]
-        # 不再在切换角色时预生成资源（启动时已预处理）
         logger.info("角色切换： %s", state.current_role)
-        # notify callback if present
         try:
             if role_change_callback:
                 try:

@@ -31,10 +31,6 @@ def copy_png_bytes_to_clipboard(png_bytes: bytes):
 
 #从剪贴板中获取图片
 def try_get_image() -> Image.Image | None:
-    """
-    尝试从剪贴板获取图像，如果没有图像则返回 None。
-    仅支持 Windows。
-    """
     try:
         win32clipboard.OpenClipboard()
         if win32clipboard.IsClipboardFormatAvailable(win32clipboard.CF_DIB):
