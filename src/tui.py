@@ -29,11 +29,11 @@ if PLATFORM.startswith('win'):
 class ManosabaTUI(App):
     """魔裁文本框生成器 TUI"""
 
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "textual.tcss"),
+    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "textual.tcss"),
               'r', encoding="utf-8") as f:
         CSS = f.read()
 
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "keymap.yml"),
+    with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config", "keymap.yml"),
               'r', encoding="utf-8") as f:
         keymap = yaml.safe_load(f).get(PLATFORM, {})
 
