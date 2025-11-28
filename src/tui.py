@@ -101,10 +101,10 @@ class ManosabaTUI(App):
                     with ScrollableContainer():
                         with RadioSet(id="emotion_radio"):
                             emotion_cnt = self.textbox.get_current_emotion_count()
-                            for i in range(1, emotion_cnt + 1):
+                            for i in range(0, emotion_cnt + 1):
                                 yield RadioButton(
-                                    f"表情 {i}",
-                                    value=(i == 1),
+                                    f"表情 {i}" if i > 0 else "随机表情",
+                                    value = (i == 0),
                                     id=f"emotion_{i}"
                                 )
                 with Vertical(id="switch_panel"):
@@ -225,13 +225,13 @@ class ManosabaTUI(App):
             self.call_after_refresh(self.refresh_emotion_panel)
 
         elif event.radio_set.id == "emotion_radio":
-            # 从按钮标签中提取表情编号
+            # 从按钮 id 中提取表情编号
             try:
-                label = event.pressed.label.plain
-                emotion_num = int(label.split()[-1])
+                label = event.pressed.id
+                emotion_num = int(label.split('_')[-1])
                 self.current_emotion = emotion_num
                 self.textbox.emote = emotion_num
-                self.update_status(f"已选择表情 {emotion_num} 喵")
+                self.update_status(f"已选择表情 {emotion_num} 喵" if emotion_num > 0 else "已选择随机表情喵")
             except (ValueError, AttributeError, IndexError) as e:
                 self.update_status(e)
                 pass
@@ -248,16 +248,16 @@ class ManosabaTUI(App):
             except Exception:
                 pass
 
-        # 重置表情为 1
-        self.current_emotion = 1
-        self.textbox.emote = 1
+        # 重置表情为 0
+        self.current_emotion = 0
+        self.textbox.emote = 0
 
         # 添加新的按钮
         emotion_cnt = self.textbox.get_current_emotion_count()
-        for i in range(1, emotion_cnt + 1):
+        for i in range(0, emotion_cnt + 1):
             unique_id = f"emotion_{self.current_character}_{i}"
             btn = RadioButton(
-                f"表情 {i}",
+                f"表情 {i}" if i > 0 else "随机表情",
                 value=(self.textbox.emote == i),
                 id=unique_id
             )

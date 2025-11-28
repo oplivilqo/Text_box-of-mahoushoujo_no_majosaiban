@@ -3,6 +3,7 @@ import os
 import random
 from PIL import Image
 
+BG_CNT = 16 # 背景图片数量
 
 class ImageGenerator:
     """图片生成器"""
@@ -20,10 +21,10 @@ class ImageGenerator:
             if filename.startswith(character_name):
                 return
 
-        total_images = 16 * emotion_cnt
+        total_images = BG_CNT * emotion_cnt
 
         for j in range(emotion_cnt):
-            for i in range(16):
+            for i in range(BG_CNT):
                 background_path = os.path.join(
                     self.base_path, 'assets', "background", f"c{i + 1}.png"
                 )
@@ -35,7 +36,7 @@ class ImageGenerator:
                 background = Image.open(background_path).convert("RGBA")
                 overlay = Image.open(overlay_path).convert("RGBA")
 
-                img_num = j * 16 + i + 1
+                img_num = j * BG_CNT + i + 1
                 result = background.copy()
                 result.paste(overlay, (0, 134), overlay)
 
@@ -45,7 +46,7 @@ class ImageGenerator:
                 result.convert("RGB").save(save_path)
 
                 if progress_callback:
-                    progress_callback(j * 16 + i + 1, total_images)
+                    progress_callback(j * BG_CNT + i + 1, total_images)
 
     def get_random_image_name(self, character_name: str, emotion_cnt: int,
                               emote: int | None, value_1: int) -> tuple[str, int]:
@@ -54,10 +55,10 @@ class ImageGenerator:
         Returns:
             (image_name, new_value_1)
         """
-        total_images = 16 * emotion_cnt
+        total_images = BG_CNT * emotion_cnt
 
         if emote:
-            i = random.randint((emote - 1) * 16 + 1, emote * 16)
+            i = random.randint((emote - 1) * BG_CNT + 1, emote * BG_CNT)
             return f"{character_name} ({i})", i
 
         max_attempts = 100
@@ -66,12 +67,12 @@ class ImageGenerator:
 
         while attempts < max_attempts:
             i = random.randint(1, total_images)
-            current_emotion = (i - 1) // 16
+            current_emotion = (i - 1) // BG_CNT
 
             if value_1 == -1:
                 return f"{character_name} ({i})", i
 
-            if current_emotion != (value_1 - 1) // 16:
+            if current_emotion != (value_1 - 1) // BG_CNT:
                 return f"{character_name} ({i})", i
 
             attempts += 1
