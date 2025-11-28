@@ -8,7 +8,7 @@ function initBackgrounds() {
             <label class="form-imagecheck mb-2">
                 <input name="background" type="radio" value="${key}" class="form-imagecheck-input" onchange="updateCanvas()"${key=="c15" ? " checked" : ""}/>
                 <span class="form-imagecheck-figure">
-                    <img class="form-imagecheck-image" src="./assets/backgrounds/${key}.png" alt="${value.name}" title="${value.name}" data-bs-toggle="tooltip"/>
+                    <img class="form-imagecheck-image" src="./assets/background/${key}.png" alt="${value.name}" title="${value.name}" data-bs-toggle="tooltip"/>
                 </span>
             </label>
         </div>
@@ -26,7 +26,7 @@ function initCharacters() {
             <label class="form-imagecheck mb-2">
                 <input name="character" type="radio" value="${key}" class="form-imagecheck-input" onchange="initEmotions('${key}');updateCanvas()"${key=="sherri" ? " checked" : ""}/>
                 <span class="form-imagecheck-figure">
-                    <span class="avatar avatar-xl" style="background-image: url('./assets/characters/${key}/${key} (1).png')" title="${value.name}" data-bs-toggle="tooltip"></span>
+                    <span class="avatar avatar-xl" style="background-image: url('./assets/chara/${key}/${key} (1).png')" title="${value.name}" data-bs-toggle="tooltip"></span>
                 </span>
             </label>
         </div>
@@ -44,7 +44,7 @@ function initEmotions(character) {
             <label class="form-imagecheck mb-2">
                 <input name="emotion" type="radio" value="${i}" class="form-imagecheck-input" onchange="updateCanvas()" />
                 <span class="form-imagecheck-figure">
-                    <img class="form-imagecheck-image avatar avatar-xl" src="./assets/characters/${character}/${character} (${i}).png"/>
+                    <img class="form-imagecheck-image avatar avatar-xl" src="./assets/chara/${character}/${character} (${i}).png"/>
                 </span>
             </label>
         </div>
