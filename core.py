@@ -7,7 +7,7 @@ import getpass
 import logging
 import time
 from PIL import Image
-from text_fit_draw import draw_text_auto
+from text_fit_draw import draw_text_auto,draw_name
 from image_fit_paste import paste_image_auto
 
 logger = logging.getLogger(__name__)
@@ -162,6 +162,9 @@ def set_cache_enabled(enabled: bool):
     if not enabled:
         clear_image_cache()
 
+
+
+
 #清空图片缓存
 def clear_image_cache():
     global _image_cache
@@ -237,6 +240,9 @@ def prepare_resources(callback=None):
                 img_num = j * 16 + i + 1
                 result = background.copy()
                 result.paste(overlay, (0, 134), overlay)
+
+                #画名字
+                result=draw_name(result,text_configs_dict,character_name)
 
                 save_path = os.path.join(magic_cut_folder, f"{character_name} ({img_num}).jpg")
                 try:

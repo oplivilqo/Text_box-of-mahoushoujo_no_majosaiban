@@ -138,33 +138,6 @@ def paste_image_auto(
     elif image_overlay is not None and img_overlay is None:
         print("Warning: overlay image is not exist.")
     
-    # 自动在图片上写角色专属文字（优化：使用缓存的字体，跳过空文本）
-    if text_configs_dict and role_name in text_configs_dict:
-        shadow_offset = (2, 2)  # 阴影偏移量
-        shadow_color = (0, 0, 0)  # 黑色阴影
-        
-        # 使用新的assets/fonts路径
-        font_path = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
-        
-        for config in text_configs_dict[role_name]:
-            text = config["text"]
-            if not text:  # 跳过空文本
-                continue
-            position = config["position"]
-            font_color = config["font_color"]
-            font_size = config["font_size"]
-        
-            # 使用缓存的字体
-            font = _load_font_cached(font_path, font_size)
-            
-            # 计算阴影位置
-            shadow_position = (position[0] + shadow_offset[0], position[1] + shadow_offset[1])
-            
-            # 先绘制阴影文字
-            draw.text(shadow_position, text, fill=shadow_color, font=font)
-            
-            # 再绘制主文字（覆盖在阴影上方）
-            draw.text(position, text, fill=font_color, font=font)
 
     # 输出 PNG bytes
     buf = BytesIO()

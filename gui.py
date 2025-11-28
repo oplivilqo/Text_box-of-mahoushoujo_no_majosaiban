@@ -69,6 +69,7 @@ class PreloadWindow(tk.Toplevel):
         self._q = queue.Queue()
         self._polling = False
 
+    #添加一行文本
     def add_line(self, line: str):
         try:
             self.text.config(state='normal')
@@ -83,6 +84,7 @@ class PreloadWindow(tk.Toplevel):
             self._polling = True
             self.after(interval, self._poll_queue)
 
+    #自动轮询队列
     def _poll_queue(self):
         try:
             while not self._q.empty():
@@ -124,7 +126,7 @@ class PreloadWindow(tk.Toplevel):
                 core.prepare_resources(callback=cb)
                 self._q.put('__PRELOAD_DONE__')
             except Exception:
-                logger.exception('prepare_resources worker failed')
+                logger.exception('预处理出错')
                 self._q.put('预处理出错')
                 self._q.put('__PRELOAD_DONE__')
 
@@ -145,11 +147,6 @@ class PreloadWindow(tk.Toplevel):
         self.destroy()
 
 
-def show_preload_dialog():
-    dlg = PreloadWindow(root, title='资源预生成')
-    dlg.start_prepare()
-    return dlg
-
 
 def build_ui():
     global role_var, text_widget, btn_generate, preview_label, status_label, auto_paste_var, auto_send_var, hotkey_var
@@ -164,17 +161,16 @@ def build_ui():
     cmb_role = ttk.Combobox(frm_top, values=roles, textvariable=role_var, state='readonly')
     cmb_role.pack(side='left', padx=(4, 8))
 
-    # 表情选择标签
+    #表情选择标签
     ttk.Label(frm_top, text='表情:').pack(side='left')
-    # 表情下拉框（动态更新选项）
+    #表情下拉框
     global expression_var, cmb_expression
     expression_var = tk.StringVar(value='随机')
     cmb_expression = ttk.Combobox(frm_top, textvariable=expression_var, state='readonly', width=8)
     cmb_expression.pack(side='left', padx=(4, 8))
     
-    # 初始化表情选项
+    #更新表情选择器
     def update_expression_options(role_name):
-        """根据角色更新表情选择器"""
         try:
             emotion_count = core.mahoshojo[role_name]['emotion_count']
             options = ['随机'] + [str(i) for i in range(1, emotion_count + 1)]
@@ -253,8 +249,6 @@ def build_ui():
     status_label = ttk.Label(root, text='状态：就绪')
     status_label.pack(fill='x', padx=8, pady=(0,8))
 
-    # 启动时异步预加载资源
-    threading.Thread(target=_async_prepare_resources, daemon=True).start()
 
     def on_role_selected(event):
         try:
@@ -278,7 +272,7 @@ def build_ui():
                 state.current_expression = -1
             else:
                 state.current_expression = int(selected)
-            logger.info(f'表情设置为: {state.current_expression}')
+            logger.info(f'表情设置为: {selected}')
         except Exception:
             logger.exception('设置表情失败')
             
@@ -286,18 +280,6 @@ def build_ui():
     cmb_role.bind('<<ComboboxSelected>>', on_role_selected)
     # 绑定表情选择器
     cmb_expression.bind('<<ComboboxSelected>>', on_expression_selected)
-
-
-def _async_prepare_resources():
-    try:
-        logger.info('开始预处理资源')
-        root.after(0, lambda: status_label.config(text='状态：预生成资源中...'))
-        core.prepare_resources()
-        logger.info('预处理资源完成')
-        root.after(0, lambda: status_label.config(text='状态：就绪'))
-    except Exception:
-        logger.exception('prepare_resources failed')
-        root.after(0, lambda: status_label.config(text='状态：预生成失败'))
 
 
 def on_generate_click():
@@ -423,7 +405,6 @@ def on_close():
 
 #在预处理完成前不显示主窗口
 if __name__ == '__main__':
- #   root.withdraw()
     preload = PreloadWindow(root)
     preload.start_prepare()
     # 等待 preload 窗口关闭，同时处理 Tk 事件以保证窗口可见和可更新
@@ -449,12 +430,7 @@ if __name__ == '__main__':
     #复选框打勾
     try:
         hotkey_var.set(True)
-    except Exception:
-        pass
-
-    try:
-        #注册当前状态的热键
-        hotkeys.register_hotkeys(state)
+        toggle_hotkeys(True)
     except Exception:
         logger.exception('热键注册失败')
 

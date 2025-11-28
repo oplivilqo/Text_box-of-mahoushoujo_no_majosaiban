@@ -36,6 +36,33 @@ IMAGE_SETTINGS = {
     "resize_ratio": 0.7
 }
 
+def draw_name(base_img,text_configs_dict,role_name):
+    if text_configs_dict and role_name in text_configs_dict:
+        regular_draw = ImageDraw.Draw(base_img)
+        shadow_offset = (2, 2)
+        shadow_color = (0, 0, 0)
+        
+        for config in text_configs_dict[role_name]:
+            char_text = config["text"]
+            if not char_text:  #跳过空文本
+                continue
+            position = config["position"]
+            font_color = config["font_color"]
+            font_size = config["font_size"]
+        
+            #使用新的assets/fonts路径
+            font_path_char = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
+            char_font = _load_font_cached(font_path_char, font_size)
+            
+            shadow_position = (position[0] + shadow_offset[0], position[1] + shadow_offset[1])
+            
+            regular_draw.text(shadow_position, char_text, fill=shadow_color, font=char_font)
+            regular_draw.text(position, char_text, fill=font_color, font=char_font)
+        return base_img
+    else:
+        logger.warning("未找到角色 %s 的文字配置", role_name)
+        return base_img
+
 def compress_image(image: Image.Image) -> Image.Image:
     width, height = image.size
     
@@ -306,29 +333,7 @@ def draw_text_auto(
     elif image_overlay is not None and img_overlay is None:
         print("Warning: overlay image is not exist.")
 
-    #自动在图片上写角色专属文字
-    if text_configs_dict and role_name in text_configs_dict:
-        #重新创建普通draw对象用于绘制角色名字
-        regular_draw = ImageDraw.Draw(img)
-        shadow_offset = (2, 2)
-        shadow_color = (0, 0, 0)
-        
-        for config in text_configs_dict[role_name]:
-            char_text = config["text"]
-            if not char_text:  #跳过空文本
-                continue
-            position = config["position"]
-            font_color = config["font_color"]
-            font_size = config["font_size"]
-        
-            #使用新的assets/fonts路径
-            font_path_char = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
-            char_font = _load_font_cached(font_path_char, font_size)
-            
-            shadow_position = (position[0] + shadow_offset[0], position[1] + shadow_offset[1])
-            
-            regular_draw.text(shadow_position, char_text, fill=shadow_color, font=char_font)
-            regular_draw.text(position, char_text, fill=font_color, font=char_font)
+    
     
     img = compress_image(img)
     
