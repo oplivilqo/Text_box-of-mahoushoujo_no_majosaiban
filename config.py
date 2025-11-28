@@ -45,7 +45,7 @@ class AppConfig:
         self.AUTO_SEND_IMAGE = True
         self.BASE_PATH = base_path
         self.ASSETS_PATH = os.path.join(base_path, "assets")
-        self.CACHE_PATH = os.path.join(self.ASSETS_PATH, "cache")
+        # self.CACHE_PATH = os.path.join(self.ASSETS_PATH, "cache")
         
         # 确保缓存目录存在
-        os.makedirs(self.CACHE_PATH, exist_ok=True)
+        # os.makedirs(self.CACHE_PATH, exist_ok=True)

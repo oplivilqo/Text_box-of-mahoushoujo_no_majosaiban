@@ -7,12 +7,40 @@ import os
 Align = Literal["left", "center", "right"]
 VAlign = Literal["top", "middle", "bottom"]
 
+# 字体缓存字典
+FONT_CACHE = {}
+MAX_CACHE_SIZE = 2  # 最多缓存2个字体文件
+
 IMAGE_SETTINGS = {
     "max_width": 1200,
     "max_height": 800,
     "quality": 65,
     "resize_ratio": 0.7
 }
+
+def _get_cached_font(font_path: str, size: int) -> ImageFont.FreeTypeFont:
+    """获取缓存的字体，如果不存在则加载并缓存"""
+    cache_key = (font_path, size)
+    
+    # 如果字体已在缓存中，直接返回
+    if cache_key in FONT_CACHE:
+        return FONT_CACHE[cache_key]
+    
+    # 加载新字体
+    try:
+        font = ImageFont.truetype(font_path, size=size)
+    except Exception as e:
+        raise e
+    
+    # 如果缓存已满，移除最旧的一个（按插入顺序）
+    if len(FONT_CACHE) >= MAX_CACHE_SIZE:
+        # 移除第一个插入的键
+        oldest_key = next(iter(FONT_CACHE))
+        del FONT_CACHE[oldest_key]
+    
+    # 缓存新字体
+    FONT_CACHE[cache_key] = font
+    return font
 
 def compress_image(image: Image.Image) -> Image.Image:
     """压缩图像大小"""
@@ -79,7 +107,7 @@ def draw_text_auto(
     def _load_font(size: int) -> ImageFont.FreeTypeFont:
         if font_path and os.path.exists(font_path):
             try:
-                return ImageFont.truetype(font_path, size=size)
+                return _get_cached_font(font_path, size)
             except Exception as e:
                 print(f"加载指定字体失败 {font_path}: {e}")
         
@@ -91,13 +119,13 @@ def draw_text_auto(
                 try_path = os.path.join(font_dir, font_file)
                 if os.path.exists(try_path):
                     try:
-                        return ImageFont.truetype(try_path, size=size)
+                        return _get_cached_font(try_path, size)
                     except Exception:
                         continue
         
         for font_file in font_files:
             try:
-                return ImageFont.truetype(font_file, size=size)
+                return _get_cached_font(font_file, size)
             except Exception:
                 continue
         
@@ -109,44 +137,107 @@ def draw_text_auto(
     # --- 3. 文本包行 ---
     def wrap_lines(txt: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
         lines: list[str] = []
-        for para in txt.splitlines() or [""]:
-            has_space = (" " in para)
-            units = para.split(" ") if has_space else list(para)
-            buf = ""
-
-            def unit_join(a: str, b: str) -> str:
-                if not a:
-                    return b
-                return (a + " " + b) if has_space else (a + b)
-
-            for u in units:
-                trial = unit_join(buf, u)
-                w = draw.textlength(trial, font=font)
-                if w <= max_w:
-                    buf = trial
+        
+        # 预计算常用字符宽度缓存
+        char_width_cache = {}
+        
+        def get_text_width(text: str) -> int:
+            """带缓存的文本宽度计算"""
+            return int(draw.textlength(text, font=font))
+        
+        def split_long_word(word: str, max_width: int) -> list[str]:
+            """分割过长的单词"""
+            parts = []
+            current_part = ""
+            
+            for char in word:
+                # 使用缓存避免重复计算字符宽度
+                if char not in char_width_cache:
+                    char_width_cache[char] = get_text_width(char)
+                
+                char_width = char_width_cache[char]
+                test_part = current_part + char
+                test_width = get_text_width(test_part) if len(test_part) > 1 else (
+                    get_text_width(current_part) + char_width if current_part else char_width
+                )
+                
+                if test_width <= max_width:
+                    current_part = test_part
                 else:
-                    if buf:
-                        lines.append(buf)
-                    if has_space and len(u) > 1:
-                        tmp = ""
-                        for ch in u:
-                            if draw.textlength(tmp + ch, font=font) <= max_w:
-                                tmp += ch
-                            else:
-                                if tmp:
-                                    lines.append(tmp)
-                                tmp = ch
-                        buf = tmp
-                    else:
-                        if draw.textlength(u, font=font) <= max_w:
-                            buf = u
-                        else:
-                            lines.append(u)
-                            buf = ""
-            if buf != "":
-                lines.append(buf)
-            if para == "" and (not lines or lines[-1] != ""):
+                    if current_part:
+                        parts.append(current_part)
+                    current_part = char
+                    
+                    # 如果单个字符就超宽，强制换行
+                    if char_width > max_width:
+                        parts.append(current_part)
+                        current_part = ""
+            
+            if current_part:
+                parts.append(current_part)
+            return parts
+
+        for para in txt.splitlines() or [""]:
+            if not para.strip():  # 空行处理
                 lines.append("")
+                continue
+                
+            has_space = " " in para
+            
+            if has_space:
+                # 对于有空格的文本（英文或中英混合）
+                words = para.split(" ")
+                current_line = ""
+                
+                for i, word in enumerate(words):
+                    # 测试将单词加入当前行
+                    test_line = current_line + (" " + word if current_line else word)
+                    test_width = get_text_width(test_line)
+                    
+                    if test_width <= max_w:
+                        current_line = test_line
+                    else:
+                        # 当前行已经有内容，先保存当前行
+                        if current_line:
+                            lines.append(current_line)
+                        
+                        # 检查单词本身是否超宽
+                        word_width = get_text_width(word)
+                        if word_width <= max_w:
+                            current_line = word
+                        else:
+                            # 单词超宽，需要分割
+                            word_parts = split_long_word(word, max_w)
+                            if word_parts:
+                                current_line = word_parts[0]
+                                # 将剩余部分添加到后续行
+                                for part in word_parts[1:]:
+                                    lines.append(current_line)
+                                    current_line = part
+                            else:
+                                current_line = ""
+                
+                # 添加最后一行
+                if current_line:
+                    lines.append(current_line)
+            else:
+                # 对于没有空格的文本（如纯中文）
+                current_line = ""
+                
+                for char in para:
+                    test_line = current_line + char
+                    test_width = get_text_width(test_line)
+                    
+                    if test_width <= max_w:
+                        current_line = test_line
+                    else:
+                        if current_line:
+                            lines.append(current_line)
+                        current_line = char
+                
+                if current_line:
+                    lines.append(current_line)
+        
         return lines
 
     # --- 4. 测量 ---
@@ -270,7 +361,7 @@ def draw_text_auto(
                 try_path = os.path.join(font_dir, font_file)
                 if os.path.exists(try_path):
                     try:
-                        role_font = ImageFont.truetype(try_path, font_size)
+                        role_font = _get_cached_font(try_path, font_size)
                         break
                     except Exception as e:
                         print(f"加载字体 {try_path} 失败: {e}")

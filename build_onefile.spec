@@ -1,82 +1,168 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller µ¥ÎÄ¼ş´ò°üÅäÖÃ
-# Ê¹ÓÃ·½·¨: pyinstaller build_onefile.spec
+# PyInstaller å•æ–‡ä»¶æ‰“åŒ…é…ç½® - ä¿®å¤ç‰ˆæœ¬
+# ä½¿ç”¨æ–¹æ³•: pyinstaller build_onefile.spec
 
 import os
-from PyInstaller.utils.hooks import collect_data_files
+import glob
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
-# ÊÕ¼¯ËùÓĞ×ÊÔ´ÎÄ¼ş
-datas = [
-    ('font3.ttf', '.'),
-    ('text_fit_draw.py', '.'),
-    ('image_fit_paste.py', '.'),
+def collect_files(pattern, dest_folder='.'):
+    """å®‰å…¨åœ°æ”¶é›†æ–‡ä»¶ï¼Œå¦‚æœæ–‡ä»¶ä¸å­˜åœ¨åˆ™è·³è¿‡"""
+    files = []
+    try:
+        matches = glob.glob(pattern, recursive=True)
+        for match in matches:
+            if os.path.isfile(match):
+                files.append((match, dest_folder))
+    except Exception:
+        pass
+    return files
+
+def collect_folder_files(folder_path, dest_folder):
+    """å®‰å…¨åœ°æ”¶é›†æ–‡ä»¶å¤¹ä¸­çš„æ‰€æœ‰æ–‡ä»¶"""
+    files = []
+    try:
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            for root, dirs, filenames in os.walk(folder_path):
+                for filename in filenames:
+                    full_path = os.path.join(root, filename)
+                    # è®¡ç®—ç›¸å¯¹è·¯å¾„ï¼Œç”¨äºä¿æŒç›®å½•ç»“æ„
+                    rel_path = os.path.relpath(root, folder_path)
+                    if rel_path == '.':
+                        final_dest = dest_folder
+                    else:
+                        final_dest = os.path.join(dest_folder, rel_path)
+                    files.append((full_path, final_dest))
+    except Exception:
+        pass
+    return files
+
+# æ”¶é›†æ‰€æœ‰èµ„æºæ–‡ä»¶
+datas = []
+
+# æ·»åŠ æ ¸å¿ƒPythonæ–‡ä»¶
+core_files = [
+    'core.py',
+    'gui.py', 
+    'config.py',
+    'clipboard_utils.py',
+    'image_processor.py',
+    'text_fit_draw.py',
+    'image_fit_paste.py'
 ]
 
-# Ìí¼Ó±³¾°ÎÄ¼ş¼ĞÖĞµÄËùÓĞÎÄ¼ş
-if os.path.exists('background'):
-    for file in os.listdir('background'):
-        if file.endswith('.png'):
-            datas.append((os.path.join('background', file), 'background'))
+for file in core_files:
+    if os.path.exists(file):
+        datas.append((file, '.'))
 
-# Ìí¼ÓËùÓĞ½ÇÉ«ÎÄ¼ş¼Ğ
-character_folders = [
-    'ema', 'hiro', 'sherri', 'hanna', 'anan', 'yuki',
-    'meruru', 'noa', 'reia', 'miria', 'nanoka', 'mago', 'alisa', 'coco'
+# æ·»åŠ å­—ä½“æ–‡ä»¶
+datas.extend(collect_files('assets/fonts/*.ttf', 'assets/fonts'))
+datas.extend(collect_files('assets/fonts/*.otf', 'assets/fonts'))
+
+# æ·»åŠ é…ç½®æ–‡ä»¶ - ä½¿ç”¨å…·ä½“æ–‡ä»¶è€Œä¸æ˜¯é€šé…ç¬¦
+config_files = [
+    'config/character_meta.json',
+    'config/keymap.json',
+    'config/process_whitelist.json',
+    'config/text_config.json'
 ]
 
-for folder in character_folders:
-    if os.path.exists(folder):
-        for file in os.listdir(folder):
-            if file.endswith('.png'):
-                datas.append((os.path.join(folder, file), folder))
+for config_file in config_files:
+    if os.path.exists(config_file):
+        datas.append((config_file, 'config'))
 
-# ÊÕ¼¯ requests µÄ SSL Ö¤Êé£¨Èç¹ûÊ¹ÓÃÁËemoji¹¦ÄÜ£©
+# æ·»åŠ èƒŒæ™¯èµ„æº
+datas.extend(collect_folder_files('assets/background', 'assets/background'))
+
+# æ·»åŠ è§’è‰²èµ„æº
+character_base_path = 'assets/chara'
+if os.path.exists(character_base_path):
+    for char_folder in os.listdir(character_base_path):
+        char_path = os.path.join(character_base_path, char_folder)
+        if os.path.isdir(char_path):
+            dest_path = os.path.join('assets/chara', char_folder)
+            datas.extend(collect_folder_files(char_path, dest_path))
+
+# æ”¶é›†è¯ä¹¦æ–‡ä»¶
 try:
-    datas += collect_data_files('certifi')
+    certifi_data = collect_data_files('certifi')
+    datas.extend(certifi_data)
 except:
     pass
 
-# Òş²Øµ¼ÈëµÄÄ£¿é
+# éšè—å¯¼å…¥çš„æ¨¡å—
 hiddenimports = [
+    # PILç›¸å…³
     'PIL._tkinter_finder',
     'PIL._imaging',
+    'PIL.Image',
+    'PIL.ImageTk',
+    'PIL.ImageOps',
+    'PIL.ImageDraw',
+    'PIL.ImageFont',
+    
+    # GUIç›¸å…³
+    'tkinter',
+    'tkinter.ttk',
+    
+    # ç½‘ç»œè¯·æ±‚
     'requests',
+    'requests.utils',
+    'requests.auth',
+    'requests.models',
     'certifi',
     'charset_normalizer',
     'idna',
     'urllib3',
+    'urllib3.util',
+    'urllib3.contrib',
+    
+    # Windows API
     'win32clipboard',
     'win32gui',
     'win32process',
     'win32api',
     'win32con',
     'pywintypes',
+    
+    # é”®ç›˜å’Œè¾“å…¥
     'keyboard',
+    'pynput',
+    'pynput.keyboard',
+    
+    # ç³»ç»Ÿå·¥å…·
+    'psutil',
+    
+    # å‰ªè´´æ¿
     'pyperclip',
 ]
 
-# ÅÅ³ı²»ĞèÒªµÄ´óĞÍ¿âÒÔ¼õĞ¡Ìå»ı
+# å°è¯•æ”¶é›†ä¸€äº›å¯èƒ½è¢«åŠ¨æ€å¯¼å…¥çš„æ¨¡å—
+try:
+    hiddenimports.extend(collect_submodules('pynput'))
+except:
+    pass
+
+# æ’é™¤ä¸éœ€è¦çš„åº“
 excludes = [
     'matplotlib',
     'numpy',
     'pandas',
     'scipy',
-    'tkinter',
     'test',
     'unittest',
     'email',
-    'html',
-    'http',
-    'xml',
     'pydoc',
     'doctest',
+    'setuptools',
+    'pip',
 ]
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[os.getcwd()],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
@@ -99,18 +185,18 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='mahosojo',
+    name='mahoshojo_textbox',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # ¸ÄÎª False ¿ÉÒş²Ø¿ØÖÆÌ¨´°¿Ú
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Èç¹ûÓĞÍ¼±êÎÄ¼ş£¬ÉèÖÃÎª icon='icon.ico'
+    icon='icon.ico' if os.path.exists('icon.ico') else None,
 )

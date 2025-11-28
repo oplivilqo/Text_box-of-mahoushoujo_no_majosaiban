@@ -127,27 +127,21 @@ class ManosabaCore:
         """获取当前角色的表情数量"""
         return self.mahoshojo[self.get_character()]["emotion_count"]
 
-    def delete_cache(self) -> None:
-        """删除缓存"""
-        for filename in os.listdir(self.config.CACHE_PATH):
-            if filename.lower().endswith('.jpg'):
-                os.remove(os.path.join(self.config.CACHE_PATH, filename))
-
     def generate_preview(self, preview_size=(400, 300)) -> tuple:
         """生成预览图片和相关信息"""
         character_name = self.get_character()
         emotion_count = self.get_current_emotion_count()
         
         # 确定表情和背景
-        if self.selected_emotion is None:
-            emotion_index = self._get_random_emotion(emotion_count)
-        else:
-            emotion_index = self.selected_emotion
+        # if self.selected_emotion is None:
+        emotion_index = self._get_random_emotion(emotion_count) if self.selected_emotion is None else self.selected_emotion
+        # else:
+        #     emotion_index = self.selected_emotion
             
-        if self.selected_background is None:
-            background_index = self.image_processor.get_random_background()
-        else:
-            background_index = self.selected_background
+        # if self.selected_background is None:
+        background_index = self.image_processor.get_random_background() if self.selected_background is None else self.selected_background
+        # else:
+            # background_index = self.selected_background
         
         # 保存预览使用的表情和背景
         self.preview_emotion = emotion_index
@@ -265,7 +259,7 @@ class ManosabaCore:
         else:
             background_index = self.selected_background
 
-        # 获取内容
+        # 获取剪切板内容
         text = self.cut_all_and_get_text()
         image = self.clipboard_manager.get_image_from_clipboard()
 
@@ -275,7 +269,8 @@ class ManosabaCore:
         try:
             # 使用快速生成方法
             png_bytes = self.image_processor.generate_image_fast(
-                character_name, background_index, emotion_index, 
+                character_name,
+                #  background_index, emotion_index, 
                 text, image, self.get_current_font()
             )
         except Exception as e:
@@ -306,23 +301,23 @@ class ManosabaCore:
             self.kbd_controller.release('v')
             self.kbd_controller.release(Key.ctrl if platform != 'darwin' else Key.cmd)
 
-            time.sleep(0.3)
+            time.sleep(0.1)
 
             if self.config.AUTO_SEND_IMAGE:
                 self.kbd_controller.press(Key.enter)
                 self.kbd_controller.release(Key.enter)
 
         # 保存当前生成使用的值，用于返回信息
-        used_emotion = emotion_index
-        used_background = background_index
+        # used_emotion = emotion_index
+        # used_background = background_index
         
-        # 重置预览状态，确保下次预览重新生成
-        if hasattr(self, 'preview_emotion'):
-            self.preview_emotion = None
-        if hasattr(self, 'preview_background'):
-            self.preview_background = None
+        # # 重置预览状态，确保下次预览重新生成
+        # if hasattr(self, 'preview_emotion'):
+        #     self.preview_emotion = None
+        # if hasattr(self, 'preview_background'):
+        #     self.preview_background = None
         
         # 重置最后使用的表情，确保下次随机不会重复
         self.last_emotion = -1
 
-        return f"成功生成图片！角色: {character_name}, 表情: {used_emotion}, 背景: {used_background}"
+        return f"成功生成图片！角色: {character_name}, 表情: {emotion_index}, 背景: {background_index}"

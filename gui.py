@@ -17,16 +17,16 @@ class ManosabaGUI:
         self.root.geometry("800x700")
         
         # 预览相关
-        self.preview_image = None
-        self.preview_photo = None
+        # self.preview_image = None
+        # self.preview_photo = None
         self.preview_size = (700, 525)
-        self.preview_needs_update = True  # 标记预览是否需要更新内容
+        # self.preview_needs_update = True  # 标记预览是否需要更新内容
         
         self.setup_gui()
         self.root.bind('<Configure>', self.on_window_resize)
         
         # 延迟初始预览，确保窗口已经显示
-        self.root.after(100, self.initial_preview)
+        # self.root.after(100, self.initial_preview)
         # 确保初始状态正确
         self.update_status("就绪 - 等待生成预览")
 
@@ -53,7 +53,7 @@ class ManosabaGUI:
 
     def initial_preview(self):
         """初始预览生成"""
-        self.preview_needs_update = True
+        # self.preview_needs_update = True
         self.update_preview()
     
     def setup_gui(self):
@@ -164,6 +164,9 @@ class ManosabaGUI:
         preview_info_label3 = ttk.Label(preview_info_frame, textvariable=self.preview_info_var3)
         preview_info_label3.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
 
+         # 更新预览按钮 - 放在预览信息区域的右侧
+        ttk.Button(preview_info_frame, text="刷新", command=self.update_preview, width=10).pack(side=tk.RIGHT, padx=5)
+
         # 图片预览区域
         self.preview_label = ttk.Label(preview_frame)
         self.preview_label.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
@@ -172,9 +175,9 @@ class ManosabaGUI:
         button_frame = ttk.Frame(main_frame)
         button_frame.grid(row=5, column=0, columnspan=2, pady=10)
         
-        ttk.Button(button_frame, text="生成图片", command=self.generate_image).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="清除缓存", command=self.delete_cache).pack(side=tk.LEFT, padx=5)
-        ttk.Button(button_frame, text="更新预览", command=self.force_update_preview).pack(side=tk.LEFT, padx=5)
+        # ttk.Button(button_frame, text="生成图片", command=self.generate_image).pack(side=tk.LEFT, padx=5)
+        # ttk.Button(button_frame, text="清除缓存", command=self.delete_cache).pack(side=tk.LEFT, padx=5)
+        # ttk.Button(button_frame, text="更新预览", command=self.update_preview).pack(side=tk.LEFT, padx=5)
         
         # 状态栏
         self.status_var = tk.StringVar(value="就绪")
@@ -186,6 +189,8 @@ class ManosabaGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.rowconfigure(4, weight=1)
+
+        self.update_preview()
     
     def on_window_resize(self, event):
         """处理窗口大小变化事件 - 调整大小并刷新内容"""
@@ -197,7 +202,7 @@ class ManosabaGUI:
             if abs(new_width - self.preview_size[0]) > 30 or abs(new_height - self.preview_size[1]) > 20:
                 self.preview_size = (new_width, new_height)
                 # 标记需要更新预览内容，并立即更新
-                self.preview_needs_update = True
+                # self.preview_needs_update = True
                 self.update_preview()
     
     def adjust_preview_size(self):
@@ -208,10 +213,10 @@ class ManosabaGUI:
             self.preview_photo = ImageTk.PhotoImage(resized_image)
             self.preview_label.configure(image=self.preview_photo)
     
-    def force_update_preview(self):
-        """强制更新预览内容"""
-        self.preview_needs_update = True
-        self.update_preview()
+    # def force_update_preview(self):
+    #     """强制更新预览内容"""
+    #     self.preview_needs_update = True
+    #     self.update_preview()
     
     def update_preview(self):
         """更新预览"""
@@ -250,7 +255,6 @@ class ManosabaGUI:
                         self.preview_info_var3.set("")
             
         except Exception as e:
-            print(f"更新预览失败: {e}")
             # 错误信息也分配到三个标签中
             error_msg = f"预览生成失败: {str(e)}"
             self.preview_info_var1.set(error_msg)
@@ -270,7 +274,7 @@ class ManosabaGUI:
         self.update_emotion_options()
         
         # 标记需要更新预览内容
-        self.preview_needs_update = True
+        # self.preview_needs_update = True
         self.update_preview()
         self.update_status(f"已切换到角色: {self.core.get_character(full_name=True)}")
     
@@ -292,7 +296,7 @@ class ManosabaGUI:
                 emotion_index = int(emotion_value.split()[-1])
                 self.core.selected_emotion = emotion_index
         
-        self.preview_needs_update = True
+        # self.preview_needs_update = True
         self.update_preview()
     
     def on_emotion_changed(self, event=None):
@@ -302,7 +306,7 @@ class ManosabaGUI:
             if emotion_value:
                 emotion_index = int(emotion_value.split()[-1])
                 self.core.selected_emotion = emotion_index
-                self.preview_needs_update = True
+                # self.preview_needs_update = True
                 self.update_preview()
     
     def on_background_random_changed(self):
@@ -317,7 +321,7 @@ class ManosabaGUI:
                 background_index = int(background_value.split()[-1])
                 self.core.selected_background = background_index
         
-        self.preview_needs_update = True
+        # self.preview_needs_update = True
         self.update_preview()
     
     def on_background_changed(self, event=None):
@@ -327,7 +331,7 @@ class ManosabaGUI:
             if background_value:
                 background_index = int(background_value.split()[-1])
                 self.core.selected_background = background_index
-                self.preview_needs_update = True
+                # self.preview_needs_update = True
                 self.update_preview()
     
     def on_auto_paste_changed(self):
@@ -366,7 +370,7 @@ class ManosabaGUI:
         self.root.update_idletasks()
         
         # 标记需要更新预览
-        self.preview_needs_update = True
+        # self.preview_needs_update = True
         self.update_preview()
         
         # 再次强制刷新，确保预览也更新
