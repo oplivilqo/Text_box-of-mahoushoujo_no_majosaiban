@@ -3,3 +3,4 @@ __pycache__/
 .vs/
 emoji_png/
 .idea/
+build_onefile.spec
