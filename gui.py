@@ -24,6 +24,13 @@ class ManosabaGUI:
         
         self.setup_gui()
         self.root.bind('<Configure>', self.on_window_resize)
+        
+        # 延迟初始预览，确保窗口已经显示
+        self.root.after(100, self.initial_preview)
+    
+    def initial_preview(self):
+        """初始预览生成"""
+        self.preview_needs_update = True
         self.update_preview()
     
     def setup_gui(self):
@@ -104,25 +111,39 @@ class ManosabaGUI:
         ttk.Checkbutton(settings_frame, text="自动发送", variable=self.auto_send_var,
                        command=self.on_auto_send_changed).grid(row=0, column=1, sticky=tk.W, padx=5)
         
-        # 预览框架 - 使用PanedWindow来确保图片区域优先级
-        preview_container = ttk.PanedWindow(main_frame, orient=tk.VERTICAL)
-        preview_container.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
-        
-        # 图片预览区域（高优先级）
-        preview_image_frame = ttk.LabelFrame(preview_container, text="图片预览", padding="5")
-        preview_container.add(preview_image_frame, weight=3)  # 更高的权重
-        
-        self.preview_label = ttk.Label(preview_image_frame)
+        # 预览框架
+        preview_frame = ttk.LabelFrame(main_frame, text="图片预览", padding="5")
+        preview_frame.grid(row=4, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5)
+
+        # 预览信息区域（放在图片上方，横向排列三个信息项）
+        preview_info_frame = ttk.Frame(preview_frame)
+        preview_info_frame.pack(fill=tk.X, padx=5, pady=(0, 5))
+
+        # 创建三个标签用于显示预览信息，横向排列
+        self.preview_info_var1 = tk.StringVar(value="信息1")
+        self.preview_info_var2 = tk.StringVar(value="信息2")
+        self.preview_info_var3 = tk.StringVar(value="信息3")
+
+        preview_info_label1 = ttk.Label(preview_info_frame, textvariable=self.preview_info_var1)
+        preview_info_label1.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+
+        # 添加分隔线
+        separator1 = ttk.Separator(preview_info_frame, orient=tk.VERTICAL)
+        separator1.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=2)
+
+        preview_info_label2 = ttk.Label(preview_info_frame, textvariable=self.preview_info_var2)
+        preview_info_label2.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+
+        # 添加分隔线
+        separator2 = ttk.Separator(preview_info_frame, orient=tk.VERTICAL)
+        separator2.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=2)
+
+        preview_info_label3 = ttk.Label(preview_info_frame, textvariable=self.preview_info_var3)
+        preview_info_label3.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+
+        # 图片预览区域
+        self.preview_label = ttk.Label(preview_frame)
         self.preview_label.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
-        
-        # 预览信息区域（低优先级）
-        preview_info_frame = ttk.LabelFrame(preview_container, text="预览信息", padding="5")
-        preview_container.add(preview_info_frame, weight=1)  # 较低的权重
-        
-        self.preview_info_var = tk.StringVar(value="预览信息将显示在这里")
-        preview_info_label = ttk.Label(preview_info_frame, textvariable=self.preview_info_var, 
-                                      wraplength=400, justify=tk.LEFT)
-        preview_info_label.pack(expand=True, fill=tk.BOTH, padx=5, pady=5)
         
         # 按钮框架
         button_frame = ttk.Frame(main_frame)
@@ -144,7 +165,7 @@ class ManosabaGUI:
         main_frame.rowconfigure(4, weight=1)
     
     def on_window_resize(self, event):
-        """处理窗口大小变化事件 - 只调整大小，不刷新内容"""
+        """处理窗口大小变化事件 - 调整大小并刷新内容"""
         if event.widget == self.root:
             window_width = self.root.winfo_width()
             new_width = max(200, window_width - 40)
@@ -152,12 +173,13 @@ class ManosabaGUI:
             
             if abs(new_width - self.preview_size[0]) > 30 or abs(new_height - self.preview_size[1]) > 20:
                 self.preview_size = (new_width, new_height)
-                # 只调整大小，不刷新内容
-                self.adjust_preview_size()
+                # 标记需要更新预览内容，并立即更新
+                self.preview_needs_update = True
+                self.update_preview()
     
     def adjust_preview_size(self):
         """只调整预览图大小，不重新生成内容"""
-        if self.preview_photo:
+        if self.preview_photo and self.preview_image:
             # 调整现有图片大小
             resized_image = self.preview_image.resize(self.preview_size, Image.Resampling.LANCZOS)
             self.preview_photo = ImageTk.PhotoImage(resized_image)
@@ -169,10 +191,11 @@ class ManosabaGUI:
         self.update_preview()
     
     def update_preview(self):
+        print("更新预览，preview_needs_update =", self.preview_needs_update)  # 调试用
         """更新预览 - 只在需要时刷新内容"""
         if not self.preview_needs_update:
             return
-            
+
         try:
             preview_image, info = self.core.generate_preview(self.preview_size)
             
@@ -183,15 +206,41 @@ class ManosabaGUI:
             self.preview_photo = ImageTk.PhotoImage(preview_image)
             self.preview_label.configure(image=self.preview_photo)
             
-            # 更新预览信息
-            self.preview_info_var.set(info)
+            # 更新预览信息 - 将信息拆分成三个部分横向显示
+            # 假设info是一个包含三个部分的字符串，用换行符分隔
+            info_parts = info.split('\n')
+            if len(info_parts) >= 3:
+                self.preview_info_var1.set(info_parts[0])
+                self.preview_info_var2.set(info_parts[1])
+                self.preview_info_var3.set(info_parts[2])
+            else:
+                # 如果信息不是三部分，则按需分配
+                for i, part in enumerate(info_parts):
+                    if i == 0:
+                        self.preview_info_var1.set(part)
+                    elif i == 1:
+                        self.preview_info_var2.set(part)
+                    elif i == 2:
+                        self.preview_info_var3.set(part)
+                # 设置剩余的部分为空
+                for i in range(len(info_parts), 3):
+                    if i == 0:
+                        self.preview_info_var1.set("")
+                    elif i == 1:
+                        self.preview_info_var2.set("")
+                    elif i == 2:
+                        self.preview_info_var3.set("")
             
             # 重置更新标记
             self.preview_needs_update = False
             
         except Exception as e:
             print(f"更新预览失败: {e}")
-            self.preview_info_var.set(f"预览生成失败: {str(e)}")
+            # 错误信息也分配到三个标签中
+            error_msg = f"预览生成失败: {str(e)}"
+            self.preview_info_var1.set(error_msg)
+            self.preview_info_var2.set("")
+            self.preview_info_var3.set("")
     
     def on_character_changed(self, event=None):
         """角色改变事件"""
@@ -278,10 +327,12 @@ class ManosabaGUI:
         """生成图片"""
         def generate_in_thread():
             result = self.core.generate_image()
-            self.root.after(0, self.update_status, result)
-            # 生成后标记需要更新预览
-            self.root.after(0, lambda: setattr(self, 'preview_needs_update', True))
-            self.root.after(0, self.update_preview)
+            # 使用单个 lambda 确保所有操作按顺序执行
+            self.root.after(0, lambda: [
+                self.update_status(result),
+                setattr(self, 'preview_needs_update', True),
+                self.update_preview()
+            ])
         
         self.update_status("正在生成图片...")
         thread = threading.Thread(target=generate_in_thread, daemon=True)

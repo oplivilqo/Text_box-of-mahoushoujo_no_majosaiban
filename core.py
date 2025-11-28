@@ -301,4 +301,15 @@ class ManosabaCore:
                 self.kbd_controller.press(Key.enter)
                 self.kbd_controller.release(Key.enter)
 
-        return f"成功生成图片！角色: {character_name}, 表情: {emotion_index}, 背景: {background_index}"
+        # 重置预览状态
+        # 保存当前生成使用的值，用于返回信息
+        used_emotion = emotion_index
+        used_background = background_index
+        
+        # 强制重置预览状态，确保下次预览会重新生成
+        self.preview_emotion = None
+        self.preview_background = None
+        # 重置最后使用的表情，确保下次随机不会重复
+        self.last_emotion = -1
+
+        return f"成功生成图片！角色: {character_name}, 表情: {used_emotion}, 背景: {used_background}"
