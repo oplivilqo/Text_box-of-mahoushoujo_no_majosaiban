@@ -1,7 +1,22 @@
-Pillow>=12.0.0
+# Image processing
+Pillow>=10.0.0
+
+# Keyboard and clipboard operations
 keyboard>=0.13.5
-pyperclip>=1.11.0
-pywin32>=311
+pyperclip>=1.9.0
+
+# Windows API support
+pywin32>=306
+
+# Process management
 psutil>=5.9.0
-pilmoji>=2.0.4
+
+# Emoji support - CRITICAL VERSION COMPATIBILITY
+# pilmoji 2.0.x REQUIRES emoji 1.x (NOT 2.x or higher)
+# emoji 2.x removed get_emoji_unicode_dict() which pilmoji depends on
+# DO NOT upgrade emoji to 2.x - it will break the build
 emoji==1.7.0
+pilmoji>=2.0.4,<3.0.0
+
+# Type hints support (auto-installed for Python < 3.10)
+typing-extensions>=4.0.0; python_version < '3.10'
