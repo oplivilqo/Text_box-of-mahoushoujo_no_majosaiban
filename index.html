@@ -7,6 +7,7 @@
     <title>魔法少女的魔女审判 文本框表情包生成器</title>
     <!-- CSS files -->
     <link href="./css/tabler.min.css" type="text/css" rel="stylesheet" />
+    <link href="./css/tabler-vendors.min.css" type="text/css" rel="stylesheet" />
 </head>
 <body data-bs-theme="dark">
     <div class="page">
@@ -49,9 +50,19 @@
                         <div class="card-body">
                             <div class="tab-content">
                                 <div class="tab-pane" id="tabs-background">
-                                    <div class="mb-0">
-                                        <label class="form-label">背景图</label>
+                                    <div class="mb-2">
+                                        <label class="form-label">内置背景</label>
                                         <div class="row g-2" id="backgrounds_div"></div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">自定义背景</label>
+                                        <div class="row g-2" id="custom_backgrounds_div"></div>
+                                        <input type="file" name="custom_backgrounds" class="form-control form-control-lg" accept="image/*" multiple/>
+                                        <img id="custom_background_ui" src="./assets/background/ui.png" hidden/>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="form-label">自定义背景选项</label>
+                                        <div class="d-flex align-items-center flex-wrap gap-1" id="custom_background_options_div"></div>
                                     </div>
                                 </div>
                                 <div class="tab-pane active show" id="tabs-chara">
@@ -67,19 +78,19 @@
                                 <div class="tab-pane" id="tabs-text">
                                     <div class="mb-3">
                                         <label class="form-label">字体</label>
-                                        <div class="d-flex align-items-center flex-wrap" id="text_fonts_div"></div>
+                                        <div class="d-flex align-items-center flex-wrap gap-1" id="text_fonts_div"></div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">字号</label>
                                         <div class="d-flex align-items-center">
-                                            <input type="range" name="text_font_size" class="form-range" value="128" min="48" max="256" step="1"/>
-                                            <input class="form-control form-control-flush w-6 ms-2" name="text_font_size" type="number" value="128" step="1" min="48" max="256">
+                                            <input type="range" name="text_font_size" class="form-range" value="128" min="32" max="256" step="1"/>
+                                            <input class="form-control form-control-flush w-7 ms-2" name="text_font_size" type="number" value="128" min="32" max="256" step="1">
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">选项</label>
-                                        <div class="d-flex align-items-center flex-wrap">
-                                            <label class="form-check form-check-inline flex-grow-1 mb-0">
+                                        <div class="d-flex align-items-center flex-wrap gap-1">
+                                            <label class="form-check form-check-inline flex-grow-1 my-0">
                                                 <input class="form-check-input" type="checkbox" name="text_highlight" onchange="updateCanvas()" onclick="updateCanvas()" checked>
                                                 <span class="form-check-label">启用<span class="text-warning">【突出显示】</span></span>
                                             </label>
@@ -89,7 +100,7 @@
                                         <label class="form-label">文本</label>
                                         <div class="row g-2" id="texts_div">
                                             <div class="col">
-                                                <textarea name="text" class="form-control form-control-lg" placeholder="输入文本" oninput="updateCanvas()" onchange="updateCanvas()" rows="7" style="resize:none;"></textarea>
+                                                <textarea name="text" class="form-control" placeholder="输入文本" oninput="updateCanvas()" onchange="updateCanvas()" data-bs-toggle="autosize" style="resize:none;"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -156,6 +167,12 @@
                                     </div>
                                     <hr>
                                     <h2>更新日志</h2>
+                                    <h3>v1.0.2</h3>
+                                    <ul>
+                                        <li>新增自定义背景图片功能</li>
+                                        <li>新增自定义字体功能</li>
+                                        <li>一些页面样式修正</li>
+                                    </ul>
                                     <h3>v1.0.1</h3>
                                     <ul>
                                         <li>兼容上游仓库的素材与配置文件</li>
@@ -178,20 +195,20 @@
                                         </div>
                                         <input type="file" name="configs" class="form-control form-control-lg" accept=".yml,application/yaml" multiple/>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-6">
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <label class="form-label">角色元数据 <code>chara_meta.yml</code></label>
                                                 <label class="form-label" id="chara_meta-indicator"><span class="text-danger">未加载</span></label>
                                             </div>
-                                            <textarea class="form-control" id="chara_meta" rows="20" readonly style="resize:none;"></textarea>
+                                            <textarea class="form-control font-monospace" id="chara_meta" rows="20" readonly style="resize:none;"></textarea>
                                         </div>
-                                        <div class="col-6">
+                                        <div class="col-md-6">
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <label class="form-label">文本配置 <code>text_configs.yml</code></label>
                                                 <label class="form-label" id="text_configs-indicator"><span class="text-danger">未加载</span></label>
                                             </div>
-                                            <textarea class="form-control autosize" id="text_configs" rows="20" readonly style="resize:none;"></textarea>
+                                            <textarea class="form-control font-monospace" id="text_configs" rows="20" readonly style="resize:none;"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -228,6 +245,7 @@
     <script src="./js/jquery.min.js" type="application/javascript"></script>
     <script src="./js/FileSaver.min.js" type="application/javascript"></script>
     <script src="./js/js-yaml.min.js" type="application/javascript"></script>
+    <script src="./js/tom-select.base.min.js" type="application/javascript"></script>
     <script src="./js/tabler.min.js" type="application/javascript"></script>
     <script src="./js/functions.js" type="application/javascript"></script>
 </body>
