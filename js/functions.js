@@ -2,6 +2,11 @@ const text_postion = [728,355]; // 文本范围起始位置
 const text_over = [2339,800];  // 文本范围右下角位置
 const shadow_offset = [2, 2]; // 阴影偏移量
 const shadow_color = [0, 0, 0]; // 黑色阴影
+const fonts = {
+    "font1": "字体1",
+    "font2": "字体2",
+    "font3": "字体3"
+};
 
 // 角色配置字典
 var mahoshojo = {};
@@ -58,7 +63,7 @@ function initEmotions(character) {
             <label class="form-imagecheck mb-2">
                 <input name="emotion" type="radio" value="${i}" class="form-imagecheck-input" onchange="updateCanvas()" onclick="updateCanvas()"/>
                 <span class="form-imagecheck-figure">
-                    <img class="form-imagecheck-image avatar avatar-xl" src="./assets/chara/${character}/${character} (${i}).png"/>
+                    <img class="form-imagecheck-image avatar avatar-2xl" src="./assets/chara/${character}/${character} (${i}).png"/>
                 </span>
             </label>
         </div>
@@ -66,6 +71,39 @@ function initEmotions(character) {
         emotions_div.append(emotion_html);
     }
     $('input[name="emotion"]').first().click();
+}
+function initFonts() {
+    let text_fonts_div = $("#text_fonts_div");
+    text_fonts_div.empty();
+
+    if ($("#text_fonts_styles").length) $("#text_fonts_styles").remove();
+    let text_fonts_styles = $('<style></style>').appendTo('head');
+    text_fonts_styles.attr('type', 'text/css');
+    text_fonts_styles.attr('id', 'text_fonts_styles');
+
+    let font_html = `
+    <label class="form-check form-check-inline flex-grow-1 mb-0">
+        <input name="text_font" type="radio" value="default" class="form-check-input" onchange="updateCanvas()" onclick="updateCanvas()"/>
+        <span class="form-check-label">浏览器默认</span>
+    </label>
+    `;
+    text_fonts_div.append(font_html);
+
+    for (const [key, value] of Object.entries(fonts)) {
+        let font_html = `
+        <label class="form-check form-check-inline flex-grow-1 mb-0">
+            <input name="text_font" type="radio" value="${key}" class="form-check-input" onchange="updateCanvas()" onclick="updateCanvas()"${key=="font3" ? " checked" : ""}/>
+            <span class="form-check-label" style="font-family: ${key};">${value}</span>
+        </label>
+        `;
+        text_fonts_div.append(font_html);
+
+        text_fonts_styles.append(`@font-face {
+            font-family: "${key}";
+            src: url("./assets/fonts/${key}.ttf");
+        }`);
+    }
+    $('input[name="text_font"][value="font3"]').click();
 }
 function updateCanvas() {
     let canvas = $('#canvas')[0];
@@ -80,7 +118,7 @@ function updateCanvas() {
     if (character) {
         if ($('input[name="emotion"]:checked')) ctx.drawImage($('input[name="emotion"]:checked').next().children()[0], 0, 134);
         for (const [key, value] of Object.entries(text_configs[character])) {
-            ctx.font = `${value.font_size}px font3`;
+            ctx.font = `${value.font_size}px ${mahoshojo[character].font}`;
 
             ctx.fillStyle = `rgb(${shadow_color[0]}, ${shadow_color[1]}, ${shadow_color[2]})`;
             ctx.fillText(value.text, value.position[0] + shadow_offset[0], value.font_size + value.position[1] + shadow_offset[1]);
@@ -90,10 +128,13 @@ function updateCanvas() {
         }
     }
 
-    let text = $('input[name="text"]').val();
+    let text = $('textarea[name="text"]').val();
+    let text_font = $('input[name="text_font"]:checked').val();
+    if (text_font == "default") text_font = window.getComputedStyle(document.body)['fontFamily'];
+    let text_font_size = parseInt($('input[name="text_font_size"]').val());
+    let text_highlight = $('input[name="text_highlight"]:checked').val();
     if (text) {
-        let text_font_size = parseInt($('input[name="text_font_size"]').val());
-        ctx.font = `${text_font_size}px ${mahoshojo[character].font}`;
+        ctx.font = `${text_font_size}px ${text_font}`;
         
         // 自动换行绘制
         const maxWidth = text_over[0] - text_postion[0];
@@ -102,37 +143,46 @@ function updateCanvas() {
         const maxLines = Math.floor(maxHeight / lineHeight) || 1;
         let lines = [];
 
-        // 根据空格进行单词换行，若无空格则按字符换行（适合中文）
-        if (text.indexOf(' ') !== -1) {
-            const words = text.split(' ');
-            let line = '';
-            for (let n = 0; n < words.length; n++) {
-                const testLine = line ? (line + ' ' + words[n]) : words[n];
-                const testWidth = ctx.measureText(testLine).width;
-                if (testWidth > maxWidth && line) {
-                    lines.push(line);
-                    line = words[n];
-                    if (lines.length >= maxLines) break;
-                } else {
-                    line = testLine;
+        // 根据空格或换行进行单词换行，若无空格则按字符换行（适合中文）
+        // 先按换行分段处理，每个段落内部再按单词或字符换行，段落之间保留空行
+        const paragraphs = text.split('\n');
+        for (let p = 0; p < paragraphs.length; p++) {
+            const para = paragraphs[p];
+
+            if (para.indexOf(' ') !== -1) {
+                const words = para.split(' ');
+                let line = '';
+                for (let n = 0; n < words.length; n++) {
+                    const word = words[n];
+                    const testLine = line ? (line + ' ' + word) : word;
+                    const testWidth = ctx.measureText(testLine).width;
+                    if (testWidth > maxWidth && line) {
+                        lines.push(line);
+                        line = word;
+                        if (lines.length >= maxLines) break;
+                    } else {
+                        line = testLine;
+                    }
                 }
-            }
-            if (lines.length < maxLines && line) lines.push(line);
-        } else {
-            let line = '';
-            for (let i = 0; i < text.length; i++) {
-                const ch = text[i];
-                const testLine = line + ch;
-                const testWidth = ctx.measureText(testLine).width;
-                if (testWidth > maxWidth && line) {
-                    lines.push(line);
-                    line = ch;
-                    if (lines.length >= maxLines) break;
-                } else {
-                    line = testLine;
+                if (lines.length < maxLines && line) lines.push(line);
+            } else {
+                let line = '';
+                for (let i = 0; i < para.length; i++) {
+                    const ch = para[i];
+                    const testLine = line + ch;
+                    const testWidth = ctx.measureText(testLine).width;
+                    if (testWidth > maxWidth && line) {
+                        lines.push(line);
+                        line = ch;
+                        if (lines.length >= maxLines) break;
+                    } else {
+                        line = testLine;
+                    }
                 }
+                if (lines.length < maxLines && line) lines.push(line);
             }
-            if (lines.length < maxLines && line) lines.push(line);
+
+            if (lines.length >= maxLines) break;
         }
 
         // 绘制每一行（先阴影再主体）
@@ -149,33 +199,35 @@ function updateCanvas() {
             ctx.fillText(line, x, y);
         }
 
-        // 突出显示【文本】部分
-        let isHighlight = false;
-        for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
-            const line = lines[i];
-            const x = text_postion[0];
-            // 保持与原来单行位置一致：首行基线为 text_font_size + text_postion[1]
-            const y = text_font_size + text_postion[1] + i * lineHeight;
+        if (text_highlight) {
+            // 突出显示【文本】部分
+            let isHighlight = false;
+            for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+                const line = lines[i];
+                const x = text_postion[0];
+                // 保持与原来单行位置一致：首行基线为 text_font_size + text_postion[1]
+                const y = text_font_size + text_postion[1] + i * lineHeight;
 
-            // 检查并切换绘制颜色
-            const parts = line.split(/(【|】)/g);
-            let currentX = x;
+                // 检查并切换绘制颜色
+                const parts = line.split(/(【|】)/g);
+                let currentX = x;
 
-            parts.forEach(part => {
-                if (part === '【') {
-                    isHighlight = true;
-                }
-                if (isHighlight) {
-                    ctx.fillStyle = `rgb(${text_configs[character][0]['font_color'][0]},${text_configs[character][0]['font_color'][1]},${text_configs[character][0]['font_color'][2]})`
-                    ctx.fillText(part, currentX, y); // 绘制高亮显示的文本
-                    currentX += ctx.measureText(part).width; // 更新当前X坐标
-                } else {
-                    currentX += ctx.measureText(part).width; // 更新当前X坐标
-                }
-                if (part === '】') {
-                    isHighlight = false;
-                }
-            });
+                parts.forEach(part => {
+                    if (part === '【') {
+                        isHighlight = true;
+                    }
+                    if (isHighlight) {
+                        ctx.fillStyle = `rgb(${text_configs[character][0]['font_color'][0]},${text_configs[character][0]['font_color'][1]},${text_configs[character][0]['font_color'][2]})`
+                        ctx.fillText(part, currentX, y); // 绘制高亮显示的文本
+                        currentX += ctx.measureText(part).width; // 更新当前X坐标
+                    } else {
+                        currentX += ctx.measureText(part).width; // 更新当前X坐标
+                    }
+                    if (part === '】') {
+                        isHighlight = false;
+                    }
+                });
+            }
         }
     }
 }
@@ -238,6 +290,8 @@ function checkConfigs(direct=false, chara_meta_yaml="", text_configs_yaml="") {
         initBackgrounds();
         initCharacters();
         initEmotions('sherri');
+        initFonts();
+        $('[data-bs-toggle="tooltip"]').tooltip();
         $('ul.nav.nav-tabs.card-header-tabs li').removeAttr("hidden");
         $('ul.nav.nav-tabs.card-header-tabs li:nth-child(2), ul.nav.nav-tabs.card-header-tabs li:nth-child(2) > a').addClass("active");
         $('.tab-pane').removeClass("active show");
@@ -248,8 +302,8 @@ function checkConfigs(direct=false, chara_meta_yaml="", text_configs_yaml="") {
         }
     } else {
         $('ul.nav.nav-tabs.card-header-tabs li').attr("hidden", true);
-        $('ul.nav.nav-tabs.card-header-tabs li:nth-child(3)').removeAttr("hidden");
-        $('ul.nav.nav-tabs.card-header-tabs li:nth-child(3), ul.nav.nav-tabs.card-header-tabs li:nth-child(3) > a').addClass("active");
+        $('ul.nav.nav-tabs.card-header-tabs li:last-child').removeAttr("hidden");
+        $('ul.nav.nav-tabs.card-header-tabs li:last-child, ul.nav.nav-tabs.card-header-tabs li:last-child > a').addClass("active");
         $('.tab-pane').removeClass("active show");
         $('#tabs-settings').addClass("active show");
         $('#preview_div').hide();
@@ -290,5 +344,9 @@ $(document).ready(function() {
             };
             reader.readAsText(file);
         }
+    });
+    $("input[name='text_font_size']").on("input change", function(){
+        $("input[name='text_font_size']").val($(this).val());
+        updateCanvas();
     });
 });

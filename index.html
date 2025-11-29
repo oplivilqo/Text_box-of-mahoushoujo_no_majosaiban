@@ -7,20 +7,6 @@
     <title>魔法少女的魔女审判 文本框表情包生成器</title>
     <!-- CSS files -->
     <link href="./css/tabler.min.css" type="text/css" rel="stylesheet" />
-    <style>
-        @font-face {
-            font-family: "font1";
-            src: url("./assets/fonts/font1.ttf");
-        }
-        @font-face {
-            font-family: "font2";
-            src: url("./assets/fonts/font2.ttf");
-        }
-        @font-face {
-            font-family: "font3";
-            src: url("./assets/fonts/font3.ttf");
-        }
-    </style>
 </head>
 <body data-bs-theme="dark">
     <div class="page">
@@ -47,7 +33,13 @@
                                     <a href="#tabs-background" class="nav-link" data-bs-toggle="tab">背景</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#tabs-chara" class="nav-link active" data-bs-toggle="tab">选项</a>
+                                    <a href="#tabs-chara" class="nav-link active" data-bs-toggle="tab">角色</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#tabs-text" class="nav-link active" data-bs-toggle="tab">文本</a>
+                                </li>
+                                <li class="nav-item ms-auto">
+                                    <a href="#tabs-about" class="nav-link" data-bs-toggle="tab">关于</a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="#tabs-settings" class="nav-link" data-bs-toggle="tab">配置</a>
@@ -67,22 +59,115 @@
                                         <label class="form-label">角色</label>
                                         <div class="row g-2" id="characters_div"></div>
                                     </div>
-                                    <div class="mb-3">
+                                    <div class="mb-0">
                                         <label class="form-label">表情</label>
                                         <div class="row g-2" id="emotions_div"></div>
                                     </div>
+                                </div>
+                                <div class="tab-pane" id="tabs-text">
                                     <div class="mb-3">
-                                        <label class="form-label">文本</label>
-                                        <div class="row g-2" id="texts_div">
-                                            <div class="col">
-                                                <input type="text" name="text" class="form-control" placeholder="输入文本" oninput="updateCanvas()" onchange="updateCanvas()"/>
-                                            </div>
+                                        <label class="form-label">字体</label>
+                                        <div class="d-flex align-items-center flex-wrap" id="text_fonts_div"></div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">字号</label>
+                                        <div class="d-flex align-items-center">
+                                            <input type="range" name="text_font_size" class="form-range" value="128" min="48" max="256" step="1"/>
+                                            <input class="form-control form-control-flush w-6 ms-2" name="text_font_size" type="number" value="128" step="1" min="48" max="256">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">选项</label>
+                                        <div class="d-flex align-items-center flex-wrap">
+                                            <label class="form-check form-check-inline flex-grow-1 mb-0">
+                                                <input class="form-check-input" type="checkbox" name="text_highlight" onchange="updateCanvas()" onclick="updateCanvas()" checked>
+                                                <span class="form-check-label">启用<span class="text-warning">【突出显示】</span></span>
+                                            </label>
                                         </div>
                                     </div>
                                     <div class="mb-0">
-                                        <label class="form-label">字体大小</label>
-                                        <input type="range" name="text_font_size" class="form-range" value="128" min="48" max="256" step="1" onchange="updateCanvas()"/>
+                                        <label class="form-label">文本</label>
+                                        <div class="row g-2" id="texts_div">
+                                            <div class="col">
+                                                <textarea name="text" class="form-control form-control-lg" placeholder="输入文本" oninput="updateCanvas()" onchange="updateCanvas()" rows="7" style="resize:none;"></textarea>
+                                            </div>
+                                        </div>
                                     </div>
+                                </div>
+                                <div class="tab-pane" id="tabs-about">
+                                    <h1>🎭魔法少女的魔女审判 文本框生成器 (JavaScript实现)</h1>
+                                    <p>一个表情包生成工具，能够快速生成带有自定义文本的魔法少女的魔女审判文本框图片。</p>
+                                    <h2>使用方法</h2>
+                                    <ol>
+                                        <li>选择背景图片</li>
+                                        <li>选择角色和表情差分</li>
+                                        <li>输入文本</li>
+                                        <li>修改文本选项（可选）</li>
+                                        <li>保存图片</li>
+                                    </ol>
+                                    <h2>GitHub 仓库分支版本对比</h2>
+                                    <div class="row row-cards">
+                                        <div class="col-sm-6 col-lg-4">
+                                            <div class="card card-md">
+                                                <div class="card-body text-center">
+                                                    <div class="h3 mb-0">tkinter GUI</div>
+                                                    <div class="display-6 fw-bold my-3"><code>(undefined)</code></div>
+                                                    <ul class="list-unstyled lh-lg">
+                                                        <li><code>Python</code> 实现 - <span class="text-warning">需要</span>另外部署环境</li>
+                                                        <li><span class="text-success">完全</span>用户界面支持</li>
+                                                        <li><span class="text-success">支持</span>图片预览</li>
+                                                        <li><span class="text-success">支持</span>自定义素材</li>
+                                                        <li><span class="text-success">聊天软件集成 自动生成与发送图片</span></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6 col-lg-4">
+                                            <div class="card card-md">
+                                                <div class="card-body text-center">
+                                                    <div class="h3 mb-0">textual TUI</div>
+                                                    <div class="display-6 fw-bold my-3"><a href="https://github.com/oplivilqo/manosaba_text_box" target="_blank"><code>main</code></a> / <a href="https://github.com/oplivilqo/manosaba_text_box/tree/refresh" target="_blank"><code>refresh</code></a></div>
+                                                    <ul class="list-unstyled lh-lg">
+                                                        <li><code>Python</code> 实现 - <span class="text-warning">需要</span>另外部署环境</li>
+                                                        <li><span class="text-warning">仅终端</span>用户界面</li>
+                                                        <li><span class="text-danger">不支持</span>图片预览</li>
+                                                        <li><span class="text-success">支持</span>自定义素材</li>
+                                                        <li><span class="text-success">聊天软件集成 自动生成与发送图片</span></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6 col-lg-4">
+                                            <div class="card card-md">
+                                                <div class="card-body text-center">
+                                                    <div class="h3 mb-0">JavaScript WebUI</div>
+                                                    <div class="display-6 fw-bold my-3"><a href="https://github.com/oplivilqo/manosaba_text_box/tree/lite" target="_blank"><code>lite</code></a></div>
+                                                    <ul class="list-unstyled lh-lg">
+                                                        <li><code>JavaScript</code> 实现 - <span class="text-success">无需</span>另外部署环境</li>
+                                                        <li><span class="text-success">完全</span>用户界面支持</li>
+                                                        <li><span class="text-success">支持</span>图片预览</li>
+                                                        <li><span class="text-success">支持</span>自定义素材</li>
+                                                        <li><span class="text-warning">无系统集成 手动填写文本生成图片</span></li>
+                                                    </ul>
+                                                </div>
+                                                <div class="ribbon bg-success text-success-fg">当前分支</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <h2>更新日志</h2>
+                                    <h3>v1.0.1</h3>
+                                    <ul>
+                                        <li>兼容上游仓库的素材与配置文件</li>
+                                        <li>新增【突出显示】功能</li>
+                                        <li>新增字体、字号选择功能</li>
+                                        <li>新增文本换行支持</li>
+                                        <li>修改文本分段逻辑</li>
+                                    </ul>
+                                    <h3>v1.0.0</h3>
+                                    <ul>
+                                        <li>JavaScript 移植分支的初始版本</li>
+                                    </ul>
                                 </div>
                                 <div class="tab-pane" id="tabs-settings">
                                     <div class="mb-3" id="configs_upload_div">
@@ -91,7 +176,7 @@
                                             <label class="form-label mb-0">请上传配置文件<code>chara_meta.yml</code>和<code>text_configs.yml</code>：</label>
                                             <button class="btn btn-sm" onclick="resetConfigs()">重置</button>
                                         </div>
-                                        <input type="file" name="configs" class="form-control" accept=".yml,application/yaml" multiple/>
+                                        <input type="file" name="configs" class="form-control form-control-lg" accept=".yml,application/yaml" multiple/>
                                     </div>
                                     <div class="row">
                                         <div class="col-6">
@@ -99,14 +184,14 @@
                                                 <label class="form-label">角色元数据 <code>chara_meta.yml</code></label>
                                                 <label class="form-label" id="chara_meta-indicator"><span class="text-danger">未加载</span></label>
                                             </div>
-                                            <textarea class="form-control" id="chara_meta" rows="20" readonly></textarea>
+                                            <textarea class="form-control" id="chara_meta" rows="20" readonly style="resize:none;"></textarea>
                                         </div>
                                         <div class="col-6">
                                             <div class="d-flex align-items-center justify-content-between">
                                                 <label class="form-label">文本配置 <code>text_configs.yml</code></label>
                                                 <label class="form-label" id="text_configs-indicator"><span class="text-danger">未加载</span></label>
                                             </div>
-                                            <textarea class="form-control autosize" id="text_configs" rows="20" readonly></textarea>
+                                            <textarea class="form-control autosize" id="text_configs" rows="20" readonly style="resize:none;"></textarea>
                                         </div>
                                     </div>
                                 </div>
