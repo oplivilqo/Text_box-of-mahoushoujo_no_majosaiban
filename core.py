@@ -8,6 +8,7 @@ import threading
 from pynput.keyboard import Key, Controller
 from sys import platform
 import keyboard as kb_module
+from typing import Dict, Any
 
 if platform.startswith("win"):
     try:
@@ -85,38 +86,58 @@ class ManosabaCore:
         init_thread = threading.Thread(target=init_task, daemon=True)
         init_thread.start()
 
+    def get_ai_models(self) -> Dict[str, Dict[str, Any]]:
+        """获取可用的AI模型配置"""
+        # 从配置文件加载或返回默认配置
+        return {
+            "ollama": {
+                "name": "Ollama",
+                "base_url": "http://localhost:11434/v1/",
+                "api_key": "",
+                "model": "qwen2.5",
+                "description": "本地运行的Ollama服务"
+            },
+            "deepseek": {
+                "name": "DeepSeek", 
+                "base_url": "https://api.deepseek.com",
+                "api_key": "",
+                "model": "deepseek-chat",
+                "description": "DeepSeek在线API"
+            }
+        }
+
+    def test_ai_connection(self, client_type: str, config: Dict[str, Any]) -> bool:
+        """测试AI连接"""
+        try:
+            return self.sentiment_analyzer.test_connection(client_type, config)
+        except Exception as e:
+            print(f"连接测试失败: {e}")
+            return False
+
     def _initialize_sentiment_analyzer(self):
         """初始化情感分析器"""
         sentiment_settings = self.gui_settings.get("sentiment_matching", {})
         if sentiment_settings.get("enabled", False):
             try:
-                ai_model = sentiment_settings.get("ai_model", "ollama")
-                api_url = sentiment_settings.get("api_url", "http://localhost:11434/api/generate")
-                model_name = sentiment_settings.get("model_name", "qwen2.5")
-                api_key = sentiment_settings.get("api_key", "")  # 获取API Key
+                client_type = sentiment_settings.get("ai_model", "ollama")
+                model_configs = sentiment_settings.get("model_configs", {})
+                config = model_configs.get(client_type, {})
                 
-                if ai_model == "ollama":
-                    success = self.sentiment_analyzer.initialize(
-                        api_type='ollama',
-                        url=api_url,
-                        model=model_name
-                    )
-                else:  # deepseek
-                    success = self.sentiment_analyzer.initialize(
-                        api_type='deepseek',
-                        url=api_url,
-                        model=model_name,
-                        api_key=api_key  # 传递API Key
-                    )
+                success = self.sentiment_analyzer.initialize(client_type, config)
                 
                 if success:
                     print("情感分析器初始化成功")
+                    self.sentiment_analyzer_initialized = True
                 else:
                     print("情感分析器初始化失败")
+                    self.sentiment_analyzer_initialized = False
+                    
             except Exception as e:
                 print(f"初始化情感分析器失败: {e}")
+                self.sentiment_analyzer_initialized = False
         else:
             print("情感匹配功能未启用")
+            self.sentiment_analyzer_initialized = False
 
     def _get_emotion_by_sentiment(self, text: str) -> int:
         """根据文本情感获取对应的表情索引"""

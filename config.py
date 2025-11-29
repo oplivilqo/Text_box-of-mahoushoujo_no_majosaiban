@@ -9,6 +9,7 @@ class ConfigLoader:
     def __init__(self, base_path):
         self.base_path = base_path
         self.config_path = os.path.join(base_path, "config")
+        self.ai_config = AIConfig()
         
     def load_chara_meta(self):
         """加载角色元数据"""
@@ -105,7 +106,7 @@ class ConfigLoader:
             "sentiment_matching": {
                 "enabled": False,
                 "ai_model": "ollama",
-                "api_url": "http://localhost:11434/api/generate",
+                "api_url": "http://localhost:11434/v1/",
                 "model_name": "qwen2.5",
                 "api_key": ""  # 新增API Key字段
             },
@@ -150,6 +151,19 @@ class ConfigLoader:
             print(f"保存GUI设置失败: {e}")
             return False
 
+class AIConfig:
+    """AI配置类"""
+    def __init__(self):
+        self.ollama = {
+            "base_url": "http://localhost:11434/v1/",
+            "api_key": "",
+            "model": "qwen2.5"
+        }
+        self.deepseek = {
+            "base_url": "https://api.deepseek.com",
+            "api_key": "",
+            "model": "deepseek-chat"
+        }
 
 class AppConfig:
     """应用配置类"""
