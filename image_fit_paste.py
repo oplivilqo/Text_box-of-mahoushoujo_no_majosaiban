@@ -32,7 +32,7 @@ def paste_image_auto(
         raise TypeError("content_image 必须为 PIL.Image.Image")
 
     if isinstance(image_source, Image.Image):
-        img = image_source.copy()
+        img = image_source#.copy()
     else:
         img = Image.open(image_source).convert("RGBA")
 

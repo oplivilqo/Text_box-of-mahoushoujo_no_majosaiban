@@ -23,9 +23,10 @@
    - 快捷键设置
    - 图像压缩设置
 
-## 程序界面
+## 程序界面  
 <img width="802" height="732" alt="image" src="https://github.com/user-attachments/assets/1dd3cde1-8eae-411d-8582-32fdc1eea628" />
-## 设置界面
+
+## 设置界面  
 <img width="502" height="632" alt="image" src="https://github.com/user-attachments/assets/e69ad801-c36c-4398-8832-4b610a0a38b4" />
 
 ## 使用须知
@@ -113,7 +114,10 @@ warden:
 - 新增了暂停和启用按键监听的热键，默认为ctrl+alt+p
 - 添加了自定义字体的功能（字体文件需要放在assets/font文件夹中），字体大小也可以在设置中自定义
 - 添加了图像压缩功能（因为剪贴板的特性，所以是直接削减像素压缩）
-- 添加了emoji绘制功能（需要联网，网络不好可能会生成失败）
+- 减少了不必要的copy操作来提升图像合成性能
+- 修复了以下bug：
+  + emoji绘制功能已修复，初次绘制的emoji可能需要联网获取图像
+  + 修复了合成图片时的多线程导致的性能问题
 
 ### v1.2
 

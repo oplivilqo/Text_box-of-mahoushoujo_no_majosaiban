@@ -2,7 +2,7 @@ font_family: font3
 font_size: 100
 image_compression:
   pixel_reduction_enabled: true
-  pixel_reduction_ratio: 79
+  pixel_reduction_ratio: 60
 quick_characters:
   character_1: ema
   character_2: hiro

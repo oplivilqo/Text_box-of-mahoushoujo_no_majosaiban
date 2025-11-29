@@ -409,6 +409,8 @@ class ManosabaGUI:
 
         # 热键监听状态
         self.hotkey_listener_active = True
+        # 图片生成状态
+        self.is_generating = False
 
         self.setup_gui()
         self.root.bind("<Configure>", self.on_window_resize)
@@ -828,7 +830,7 @@ class ManosabaGUI:
             preview_image, info = self.core.generate_preview(self.preview_size)
 
             # 保存原始图片用于大小调整
-            self.preview_image = preview_image
+            # self.preview_image = preview_image
 
             # 转换为 PhotoImage
             self.preview_photo = ImageTk.PhotoImage(preview_image)
@@ -932,6 +934,11 @@ class ManosabaGUI:
 
     def generate_image(self):
         """生成图片"""
+        if self.is_generating:
+            return
+        
+        # 设置生成状态
+        self.is_generating = True
         self.status_var.set("正在生成图片...")
 
         def generate_in_thread():
@@ -942,7 +949,8 @@ class ManosabaGUI:
                 error_msg = f"生成失败: {str(e)}"
                 print(error_msg)
                 self.root.after(0, lambda: self.on_generation_complete(error_msg))
-
+            finally:
+                self.is_generating = False
         thread = threading.Thread(target=generate_in_thread, daemon=True)
         thread.start()
 

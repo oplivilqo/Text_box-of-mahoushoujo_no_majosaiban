@@ -1,4 +1,4 @@
-"""魔裁文本框核心逻辑 - 优化版本"""
+"""魔裁文本框核心逻辑"""
 
 import os
 import time
@@ -22,7 +22,7 @@ from image_processor import ImageProcessor
 
 
 class ManosabaCore:
-    """魔裁文本框核心类 - 优化版本"""
+    """魔裁文本框核心类"""
 
     def __init__(self):
         # 初始化配置
@@ -246,16 +246,23 @@ class ManosabaCore:
 
         character_name = self.get_character()
 
-        # 确保使用预览时确定的表情和背景
-        if hasattr(self, "preview_emotion") and self.preview_emotion is not None:
-            emotion_index = self.preview_emotion
+        # 使用预览时确定的表情和背景，应该不会报错吧这个
+        emotion_index, background_index = self.preview_emotion, self.preview_background
+        # if hasattr(self, "preview_emotion") and self.preview_emotion is not None:
+        #     emotion_index = self.preview_emotion
 
-        if hasattr(self, "preview_background") and self.preview_background is not None:
-            background_index = self.preview_background
+        # if hasattr(self, "preview_background") and self.preview_background is not None:
+        #     background_index = self.preview_background
 
         # 获取剪切板内容
         text = self.cut_all_and_get_text()
         image = self.clipboard_manager.get_image_from_clipboard()
+        # if image is None:
+        #     print("剪贴板没有图像")
+        #     if  self.clipboard_manager.has_image_in_clipboard():
+        #         print("有图像")
+        # if text == "":
+        #     print("剪贴板没有文本")
 
         if text == "" and image is None:
             return "错误: 没有文本或图像"
@@ -264,7 +271,7 @@ class ManosabaCore:
             # 使用GUI中设置的对话框字体，而不是角色专用字体
             font_path = None
             font_family = self.gui_settings.get("font_family")
-            font_size = self.gui_settings.get("font_size", 12)
+            font_size = self.gui_settings.get("font_size", 120)
 
             # 如果设置了字体家族，查找对应的字体文件
             if font_family:
@@ -273,28 +280,31 @@ class ManosabaCore:
                 if os.path.exists(fonts_dir):
                     for file in os.listdir(fonts_dir):
                         # 检查文件名是否包含字体家族名称（不区分大小写）
-                        if font_family.lower() in file.lower() and file.lower().endswith(('.ttf', '.otf', '.ttc')):
+                        if (
+                            font_family.lower() in file.lower()
+                            and file.lower().endswith((".ttf", ".otf", ".ttc"))
+                        ):
                             font_path = os.path.join(fonts_dir, file)
                             break
-                
+
                 # 如果没找到匹配的字体文件，使用默认字体
                 if not font_path:
                     font_path = self.get_current_font()  # 回退到角色专用字体
             else:
                 font_path = self.get_current_font()  # 使用角色专用字体
-                
+
             # 获取压缩设置
             compression_settings = self.gui_settings.get("image_compression", {})
-                
+
             png_bytes = self.image_processor.generate_image_fast(
                 character_name,
-                background_index,
-                emotion_index,
+                # background_index,
+                # emotion_index,
                 text,
                 image,
                 font_path,  # 使用GUI设置的字体而不是角色专用字体
                 font_size,
-                compression_settings  # 传递压缩设置
+                compression_settings,  # 传递压缩设置
             )
 
         except Exception as e:
@@ -307,17 +317,16 @@ class ManosabaCore:
         if not self.clipboard_manager.copy_image_to_clipboard(png_bytes):
             return "复制到剪贴板失败"
 
-        # 等待剪贴板确认（最多等待2秒）
-        max_wait_time = 2.0
+        # 等待剪贴板确认（最多等待2.5秒）
+        max_wait_time = 2.5
         wait_interval = 0.1
-        total_waited = 0
 
-        while total_waited < max_wait_time:
+        while max_wait_time > 0:
             # 检查剪贴板中是否有图片
             if self.clipboard_manager.has_image_in_clipboard():
                 break
             time.sleep(wait_interval)
-            total_waited += wait_interval
+            max_wait_time -= wait_interval
 
         # 自动粘贴和发送
         if self.config.AUTO_PASTE_IMAGE:
@@ -326,7 +335,7 @@ class ManosabaCore:
             self.kbd_controller.release("v")
             self.kbd_controller.release(Key.ctrl if platform != "darwin" else Key.cmd)
 
-            time.sleep(0.1)
+            time.sleep(0.3)
 
             if self.config.AUTO_SEND_IMAGE:
                 self.kbd_controller.press(Key.enter)

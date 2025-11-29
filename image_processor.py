@@ -47,7 +47,6 @@ class ImageProcessor:
         # 应用像素减少压缩
         if compression_settings.get("pixel_reduction_enabled", False):
             reduction_ratio = compression_settings.get("pixel_reduction_ratio", 50) / 100.0
-            # print(f"应用像素减少压缩，比例: {reduction_ratio}")  # 调试信息
             
             if reduction_ratio > 0 and reduction_ratio < 1:
                 new_width = int(image.width * (1 - reduction_ratio))
@@ -56,8 +55,6 @@ class ImageProcessor:
                 # 确保最小尺寸
                 new_width = max(new_width, 300) #保持大致比例
                 new_height = max(new_height, 100)
-                
-                # print(f"原始尺寸: {image.width}x{image.height}, 压缩后: {new_width}x{new_height}")  # 调试信息
                 
                 # 使用高质量下采样
                 compressed_image = compressed_image.resize(
@@ -184,7 +181,7 @@ class ImageProcessor:
         overlay = self._load_character_image(character_name, emotion_index)
 
         # 合成基础图片
-        result = background.copy()
+        result = background#.copy()
         result.paste(overlay, (0, 134), overlay)
 
         # 添加角色名称文字 - 使用角色专用字体，保持不变
@@ -214,13 +211,13 @@ class ImageProcessor:
                 draw.text(position, text, fill=font_color, font=font)
 
         self.base_image_cache[cache_key] = result
-        return result.copy()
+        return result#.copy()
 
     def generate_image_fast(
         self,
         character_name: str,
-        background_index: int,
-        emotion_index: int,
+        # background_index: int,
+        # emotion_index: int,
         text: str = None,
         content_image: Image.Image = None,
         font_path: str = None,
@@ -228,21 +225,11 @@ class ImageProcessor:
         compression_settings: dict = None
     ) -> bytes:
         """快速生成图片 - 使用缓存的基础图片"""
-        cache_key = f"{character_name}_{background_index}_{emotion_index}"
-
-        # 如果当前缓存的基础图片与目标一致，直接使用
-        if self.current_base_key == cache_key and self.current_base_image:
-            base_image = self.current_base_image
-        else:
-            # 否则生成新的基础图片
-            base_image = self.generate_base_image_with_text(
-                character_name, background_index, emotion_index
-            )
-            self.current_base_image = base_image
-            self.current_base_key = cache_key
+        base_image = self.current_base_image
 
         text_box_topleft = (self.box_rect[0][0], self.box_rect[0][1])
         image_box_bottomright = (self.box_rect[1][0], self.box_rect[1][1])
+        result = None
 
         if content_image is not None:
             # 调用粘贴图像函数，它返回的是字节数据
@@ -283,8 +270,6 @@ class ImageProcessor:
                 base_path=self.base_path,
                 overlay_offset=(0, 134),
             )
-        else:
-            raise ValueError("没有文本或图像内容")
 
         # 统一处理结果
         if isinstance(result, bytes):
@@ -320,7 +305,7 @@ class ImageProcessor:
             )
 
             # 缓存当前基础图片用于快速生成
-            self.current_base_image = base_image.copy()
+            self.current_base_image = base_image#.copy()
             self.current_base_key = (
                 f"{character_name}_{background_index}_{emotion_index}"
             )

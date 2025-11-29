@@ -11,7 +11,7 @@ VAlign = Literal["top", "middle", "bottom"]
 
 # 字体缓存字典
 FONT_CACHE = {}
-MAX_CACHE_SIZE = 2  # 最多缓存2个字体文件
+MAX_CACHE_SIZE = 4  # 最多缓存4个字体文件
 
 IMAGE_SETTINGS = {
     "max_width": 1200,
@@ -88,7 +88,7 @@ def draw_text_auto(
 
     # --- 1. 打开图像 ---
     if isinstance(image_source, Image.Image):
-        img = image_source.copy()
+        img = image_source#.copy()
     else:
         img = Image.open(image_source).convert("RGBA")
 
