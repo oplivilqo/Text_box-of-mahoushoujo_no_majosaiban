@@ -216,8 +216,6 @@ class ImageProcessor:
     def generate_image_fast(
         self,
         character_name: str,
-        # background_index: int,
-        # emotion_index: int,
         text: str = None,
         content_image: Image.Image = None,
         font_path: str = None,
@@ -265,30 +263,32 @@ class ImageProcessor:
                 color=(255, 255, 255),
                 max_font_height=max_font_height,
                 font_path=font_path,
-                role_name=character_name,
-                text_configs_dict=self.text_configs_dict,
-                base_path=self.base_path,
+                # role_name=character_name,
+                # text_configs_dict=self.text_configs_dict,
+                # base_path=self.base_path,
                 overlay_offset=(0, 134),
+                compression_settings=compression_settings
             )
 
         # 统一处理结果
-        if isinstance(result, bytes):
-            # 如果是字节数据，转换为图像进行处理
-            result_image = Image.open(io.BytesIO(result))
-        elif isinstance(result, Image.Image):
-            # 如果是图像对象，直接使用
-            result_image = result
-        else:
-            raise ValueError(f"返回了未知类型: {type(result)}")
+        # if isinstance(result, bytes):
+        #     # 如果是字节数据，转换为图像进行处理
+        #     result_image = Image.open(io.BytesIO(result))
+        # elif isinstance(result, Image.Image):
+        #     # 如果是图像对象，直接使用
+        #     result_image = result
+        # else:
+        #     raise ValueError(f"返回了未知类型: {type(result)}")
 
         # 应用压缩
-        if compression_settings and compression_settings.get("pixel_reduction_enabled", False):
-            result_image = self._compress_image(result_image, compression_settings)
+        # if compression_settings and compression_settings.get("pixel_reduction_enabled", False):
+        #     result_image = self._compress_image(result_image, compression_settings)
 
         # 转换为PNG字节
-        output_bytes = io.BytesIO()
-        result_image.save(output_bytes, format="PNG")
-        return output_bytes.getvalue()
+        # output_bytes = io.BytesIO()
+        # result_image.save(output_bytes, format="PNG")
+        # return output_bytes.getvalue()
+        return result
 
     def generate_preview_image(
         self,

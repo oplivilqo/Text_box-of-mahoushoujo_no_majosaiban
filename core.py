@@ -283,7 +283,13 @@ class ManosabaCore:
             
             if not emotion_indices:
                 # 如果没有对应的情感，使用无感情表情
-                emotion_indices = character_meta.get("无感情", [3])  # 默认使用3
+                emotion_indices = character_meta.get("无感情", [])
+                if not emotion_indices:
+                    # # 如果无感情表情也不存在，返回随机表情
+                    # emotion_count = self.get_current_emotion_count()
+                    # if emotion_count > 0:
+                    #     return random.randint(1, emotion_count)
+                    return None
                 
             # 随机选择一个表情索引
             if emotion_indices:
@@ -505,6 +511,7 @@ class ManosabaCore:
             return "前台应用不在白名单内"
 
         character_name = self.get_character()
+        base_msg=""
 
         # 开始计时
         start_time = time.time()
@@ -530,11 +537,13 @@ class ManosabaCore:
             if emotion_updated:
                 selected_emotion_by_ai = self.selected_emotion
                 self.update_status("情感分析完成，更新表情")
-                print(f"[{int((time.time()-start_time)*1000)}] 情感分析完成，选择表情: {selected_emotion_by_ai}")
+                print(f"[{int((time.time()-start_time)*1000)}] 情感分析完成")
                 # 刷新预览以显示新的表情
                 self.generate_preview(self.preview_size if hasattr(self, 'preview_size') else (400, 300))
+                base_msg += f"情感: {self.sentiment_analyzer.emotion_list[selected_emotion_by_ai]}  "
             else:
                 self.update_status("情感分析失败，使用默认表情")
+                self.selected_emotion = None
                 print(f"[{int((time.time()-start_time)*1000)}] 情感分析失败")
 
         if text == "" and image is None:
@@ -573,7 +582,7 @@ class ManosabaCore:
                 character_name,
                 text,
                 image,
-                font_path,  # 使用GUI设置的字体而不是角色专用字体
+                font_path,
                 font_size,
                 compression_settings,  # 传递压缩设置
             )
@@ -594,7 +603,7 @@ class ManosabaCore:
 
         # 等待剪贴板确认（最多等待2.5秒）
         max_wait_time = 2.5
-        wait_interval = 0.1
+        wait_interval = 0.05
 
         while max_wait_time > 0:
             # 检查剪贴板中是否有图片
@@ -612,28 +621,24 @@ class ManosabaCore:
             self.kbd_controller.release("v")
             self.kbd_controller.release(Key.ctrl if platform != "darwin" else Key.cmd)
 
-            time.sleep(0.3)
+            time.sleep(0.1)
 
             if self.config.AUTO_SEND_IMAGE:
                 self.kbd_controller.press(Key.enter)
                 self.kbd_controller.release(Key.enter)
 
-        print(f"[{int((time.time()-start_time)*1000)}] 自动发送完成")
+                print(f"[{int((time.time()-start_time)*1000)}] 自动发送完成")
 
         # 重置最后使用的表情，确保下次随机不会重复
-        self.last_emotion = -1
+        # self.last_emotion = -1
         
         # 计算总用时
         end_time = time.time()
         total_time_ms = int((end_time - start_time) * 1000)
         
         # 构建状态消息
-        base_msg = f"成功生成图片！角色: {character_name}, 表情: {self.preview_emotion}, 背景: {self.preview_background}, 用时: {total_time_ms}ms"
+        base_msg += f"角色: {character_name}, 表情: {self.preview_emotion}, 背景: {self.preview_background}, 用时: {total_time_ms}ms"
         
-        # 如果启用了情感匹配并且AI选择了表情，则添加情感信息
-        if selected_emotion_by_ai is not None:
-            base_msg += f", AI选择情感: {selected_emotion_by_ai}"
-            
         return base_msg
     
     def set_status_callback(self, callback):

@@ -60,7 +60,7 @@ class ManosabaGUI:
         # 重新设置热键
         self.hotkey_manager.setup_hotkeys()
         self.update_status("热键设置已更新")
-        
+
     def setup_gui(self):
         """设置 GUI 界面"""
         # 创建菜单栏
@@ -345,6 +345,11 @@ class ManosabaGUI:
                     self.update_status("情感匹配功能已启用")
                 else:
                     self.update_status("情感匹配功能已禁用")
+                    if self.emotion_random_var.get():
+                        self.core.selected_emotion = None
+                    else:
+                        self.core.selected_emotion = int(self.emotion_combo.get().split()[-1])
+                    self.preview_manager.update_preview()
         
         # 在UI线程中执行更新
         self.root.after(0, update_ui)
@@ -398,7 +403,7 @@ class ManosabaGUI:
         
         # 设置生成状态
         self.is_generating = True
-        self.status_manager.set_status("正在生成图片...")
+        self.status_manager.update_status("正在生成图片...")
 
         def generate_in_thread():
             try:
@@ -415,7 +420,7 @@ class ManosabaGUI:
 
     def on_generation_complete(self, result):
         """生成完成后的回调函数"""
-        self.status_manager.set_status(result)
+        self.status_manager.update_status(result)
         self.update_preview()
 
     def update_status(self, message: str):

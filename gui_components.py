@@ -122,6 +122,6 @@ class StatusManager:
         self.status_var.set(message)
         self.gui.root.update_idletasks()
 
-    def set_status(self, message: str):
-        """设置状态（别名方法）"""
-        self.update_status(message)
+    # def set_status(self, message: str):
+    #     """设置状态（别名方法）"""
+    #     self.update_status(message)
