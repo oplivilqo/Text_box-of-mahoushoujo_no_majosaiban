@@ -15,15 +15,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/63/fe/a17c106a1f4061ce83f04d14bcedcfb2c38c7793ea56bfb906a6fadae8cb/evdev-1.9.2.tar.gz", hash = "sha256:5d3278892ce1f92a74d6bf888cc8525d9f68af85dbe336c95d1c87fb8f423069", size = 33301, upload-time = "2025-05-01T19:53:47.69Z" }
 
 [[package]]
-name = "keyboard"
-version = "0.13.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/79/75/c969f2258e908c39aadfc57d1cb78247dc49e6d36371bb3a48c194640c01/keyboard-0.13.5.zip", hash = "sha256:63ed83305955939ca5c9a73755e5cc43e8242263f5ad5fd3bb7e0b032f3d308b", size = 71798, upload-time = "2020-03-23T21:47:06.614Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/55/88/287159903c5b3fc6d47b651c7ab65a54dcf9c9916de546188a7f62870d6d/keyboard-0.13.5-py3-none-any.whl", hash = "sha256:8e9c2422f1217e0bd84489b9ecd361027cc78415828f4fe4f88dd4acd587947b", size = 58098, upload-time = "2020-03-23T21:47:05.023Z" },
-]
-
-[[package]]
 name = "linkify-it-py"
 version = "2.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -41,7 +32,6 @@ version = "1.2.0"
 source = { virtual = "." }
 dependencies = [
     { name = "emoji" },
-    { name = "keyboard", marker = "sys_platform == 'win32'" },
     { name = "pillow" },
     { name = "pilmoji" },
     { name = "psutil" },
@@ -57,7 +47,6 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "emoji", specifier = ">=1.7.0" },
-    { name = "keyboard", marker = "sys_platform == 'win32'", specifier = ">=0.13.5" },
     { name = "pillow", specifier = ">=12.0.0" },
     { name = "pilmoji", specifier = ">=2.0.4" },
     { name = "psutil", specifier = ">=5.9.0" },

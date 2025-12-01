@@ -1,39 +1,53 @@
-这个分支重构了原有的main.py
+Textual TUI 分支
 
 # 🎭魔法少女的魔女裁判 文本框生成器
 
 一个基于Python的自动化表情包生成工具，能够快速生成带有自定义文本的魔法少女的魔女裁判文本框图片。[灵感来源与代码参考](https://github.com/MarkCup-Official/Anan-s-Sketchbook-Chat-Box)
 
-## 预览
-<img width="1200" height="390" alt="5f10f4239bc8a82812e505fd0c4f5567" src="https://github.com/user-attachments/assets/6fb46a8d-4fc4-4d10-80a0-ed21fbb428bf" />
+## 功能预览：
+<img width="600" height="195" alt="5f10f4239bc8a82812e505fd0c4f5567" src="https://github.com/user-attachments/assets/6fb46a8d-4fc4-4d10-80a0-ed21fbb428bf" />
 
-<img width="1200" height="390" alt="96038673678af657e937d20617322e81" src="https://github.com/user-attachments/assets/847c331e-9274-4b60-9b42-af0a80265391" />
+<img width="600" height="195" alt="96038673678af657e937d20617322e81" src="https://github.com/user-attachments/assets/847c331e-9274-4b60-9b42-af0a80265391" />
 
-一个基于Python的自动化表情包生成工具，能够快速生成带有自定义文本的魔法少女的魔女裁判文本框图片。[灵感来源与代码参考](https://github.com/MarkCup-Official/Anan-s-Sketchbook-Chat-Box)
+## 分支说明：
+本分支由Kwicxy基于oplivilqo的项目二次开发，基于textual实现了终端用户界面以及其它实用功能。
 
-## 功能特色
+**主要更新功能：**
+1. 不再使用磁盘缓存，改为实时缓存在内存中，缓存大小可调，默认为100MB (约3个角色)
+2. 添加了随机人物差分的开关
+3. 更快速合理的自定义角色功能
+4. 添加了快捷键自定义功能
+5. 添加了目标窗口白名单功能
+6. 添加了uv安装方式，推荐使用uv安装依赖，速度更快
+7. 优化了程序结构与代码风格
+8. 修复了一些已知bug
+9. 自定义角色图片会自动缩放以适应文本框
 
-- 🎨 多角色支持 - 内置14个角色，每个角色多个表情差分，支持自定义角色导入
-- ⚡ 终端用户界面 - 使用Textual实现美观的用户界面
-- 🖼️ 智能合成 - 自动合成背景与角色图片
-- 📝 文本嵌入 - 自动在表情图片上添加文本
-- 🎯 随机算法 - 智能避免重复表情
+## 界面预览：
 
-## 📥 安装与使用
+<img width="1203" height="756" alt="image" src="https://github.com/user-attachments/assets/5d1219c4-582f-4573-a605-065d6abc5337" />
 
-### 环境要求
+> ^^^ 提示：底部的按钮可以按 XD
+> ^^^ 还有进度条！不用干等了 www
+
+## 安装与使用：
+
+### 环境要求：
 
 - **Python** 3.11 或更高版本
 - **pip** 或 **uv** 包管理器（二选一）
+- **Git** 用于克隆仓库
 
 在安装之前，先克隆仓库：
 ```bash
 # 克隆仓库
 git clone https://github.com/oplivilqo/manosaba_text_box.git
 cd manosaba_text_box
+# 切换到 TUI 分支
+git checkout refresh
 ```
 
-### 方案一：使用 uv 安装（推荐 ⭐ 更快）
+### 方案一：使用 uv 安装（推荐）
 
 #### 1. 安装 uv
 
@@ -61,7 +75,7 @@ uv sync
 
 ---
 
-### 方案二：使用 pip 安装（传统方式）
+### 方案二：使用 pip 安装（兼容性）
 
 #### 1. 创建虚拟环境
 
@@ -89,11 +103,6 @@ pip install -r requirements.txt
 
 **TUI 界面版**
 
-<img width="1203" height="756" alt="image" src="https://github.com/user-attachments/assets/5d1219c4-582f-4573-a605-065d6abc5337" />
-
-> ^^^ 提示：底部的按钮可以按 XD
-> ^^^ 还有进度条！不用干等了 www
-
 ```bash
 python tui.py
 ```
@@ -103,46 +112,6 @@ python tui.py
 ```bash
 python main. py
 ```
-
-
----
-
-### 🎯 首次使用
-
-1. 程序启动后，会弹出一个文本界面窗口
-2. 选择你想要的角色和表情差分
-3. 在聊天框或文本编辑器中输入要添加的文本
-4. 按下 `Ctrl+E` 快捷键(可更改)自动生成并复制图片
-5. 粘贴到你的聊天软件中发送即可
-
-> 💡 **提示**：第一次切换角色后会有读条，需要等待图片合成，这是正常的
-
----
-
-### 🔧 常见问题
-
-**Q: 我应该选择 uv 还是 pip？**
-
-A: 推荐使用 uv，因为：
-- 安装速度快 10 倍
-- 依赖解析更准确
-- 内存占用更低
-- 但如果你已经熟悉 pip，两者都可以用
-
-**Q: 按快捷键没有反应？**
-
-A: 请确保目标窗口在白名单中（在 TUI 界面中配置）
-
-**Q: macOS 上无法运行？**
-
-A: 请检查 `设置 > 隐私和安全 > 辅助功能 / 输入监控` 启用 `Python.app`
-
-
-
-
-### 使用提醒
-
-由于制作时采取了合成图片的思路，第一次切换角色后需要等待读条，无法立即使用
 
 ---
 ### 添加自定义角色
@@ -186,15 +155,23 @@ text_config:
 ### 删除自定义角色
 直接删除`<根目录>/assets/chara/`中对应角色的文件夹即可
 
-<div align="right">
-  
-### 以上. 柊回文————2025.11.15
+---
 
+### 🔧 常见问题
 
+**Q: 我应该选择 uv 还是 pip？**
 
+A: 推荐使用 uv，因为：
+- 安装速度快 10 倍
+- 依赖解析更准确
+- 内存占用更低
+- 但如果你已经熟悉 pip，两者都可以用
 
+**Q: 按快捷键没有反应？**
 
+A: 请确保目标窗口在白名单中（在 TUI 界面中配置）
 
+**Q: macOS 上无法运行？**
 
-
+A: 请检查 `设置 > 隐私和安全 > 辅助功能 / 输入监控` 启用 `Python.app`
 
