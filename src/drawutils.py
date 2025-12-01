@@ -310,7 +310,7 @@ def paste_image_auto(
             font_color = tuple(cfg["font_color"])
             font_size = cfg["font_size"]
 
-            font_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'assets', 'fonts', "font3.ttf")
+            font_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assets', 'fonts', "font3.ttf")
             font = ImageFont.truetype(font_file, font_size)
 
             shadow_pos = (pos[0] + shadow_offset[0], pos[1] + shadow_offset[1])
