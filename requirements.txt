@@ -8,4 +8,5 @@ pyperclip>=1.11.0
 psutil>=5.9.0
 pilmoji>=2.0.4
 emoji>=1.7.0
+keyboard>=0.13.5 ; sys_platform == 'win32'
 pywin32>=311 ; sys_platform == 'win32'

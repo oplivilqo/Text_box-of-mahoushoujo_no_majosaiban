@@ -15,8 +15,9 @@ PLATFORM = platform.lower()
 if PLATFORM.startswith('win'):
     try:
         import win32clipboard
+        import keyboard
     except ImportError:
-        print("[red]请先安装 Windows 运行库: pip install pywin32[/red]")
+        print("[red]请先安装 Windows 运行库: pip install pywin32 keyboard[/red]")
         raise
 
 
@@ -60,15 +61,16 @@ class ClipboardHandler:
     def cut_all_and_get_text(self) -> str:
         """模拟全选和剪切操作，返回剪切得到的文本内容"""
         pyperclip.copy("")
-
-        cmd_key = Key.cmd if PLATFORM == 'darwin' else Key.ctrl
-
-        self.kbd_controller.press(cmd_key)
-        self.kbd_controller.press('a')
-        self.kbd_controller.release('a')
-        self.kbd_controller.press('x')
-        self.kbd_controller.release('x')
-        self.kbd_controller.release(cmd_key)
+        if PLATFORM == 'darwin':
+            self.kbd_controller.press(Key.cmd)
+            self.kbd_controller.press('a')
+            self.kbd_controller.release('a')
+            self.kbd_controller.press('x')
+            self.kbd_controller.release('x')
+            self.kbd_controller.release(Key.cmd)
+        elif PLATFORM.startswith('win'):
+            keyboard.send("CTRL+A")
+            keyboard.send("CTRL+X")
 
         time.sleep(self.key_delay)
         new_clip = pyperclip.paste()

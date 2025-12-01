@@ -17,8 +17,9 @@ if PLATFORM.startswith('win'):
     try:
         import win32gui
         import win32process
+        import keyboard
     except ImportError:
-        print("[red]请先安装 Windows 运行库: pip install pywin32[/red]")
+        print("[red]请先安装 Windows 运行库: pip install pywin32 keyboard[/red]")
         raise
 
 
@@ -256,27 +257,38 @@ class ManosabaTextBox:
     def setup_global_hotkeys(self):
         """设置全局热键监听器"""
         keymap = self.keymap
-
-        hotkeys = {
-            keymap['start_generate']: lambda: print(self.start()) if self.active else None,
-            keymap['pause']: self.toggle_active,
-            keymap['delete_cache']: self.delete,
-            keymap['quit']: lambda: self.hotkey_listener.stop()
-        }
-        hotkeys.update({
-            mapping['key']: (lambda param=mapping['param']: print(self.switch_character(param)))
-            for mapping in keymap['switch_character']
-        })
-        hotkeys.update({
-            mapping['key']: (lambda param=mapping['param']: print(self.switch_emote(param)))
-            for mapping in keymap['get_expression']
-        })
-        hotkeys[keymap['show_current_character']] = lambda: print(self.get_character())
-
-        self.hotkey_listener = GlobalHotKeys(hotkeys)
-        self.hotkey_listener.start()
-        print("[green]全局热键监听器已启动[/green]")
-        self.hotkey_listener.join()
+        if PLATFORM == "darwin":
+            hotkeys = {
+                keymap['start_generate']: lambda: print(self.start()),
+                keymap['pause']: self.toggle_active,
+                keymap['delete_cache']: self.delete,
+                keymap['quit']: lambda: self.hotkey_listener.stop()
+            }
+            hotkeys.update({
+                mapping['key']: (lambda param=mapping['param']: print(self.switch_character(param)))
+                for mapping in keymap['switch_character']
+            })
+            hotkeys.update({
+                mapping['key']: (lambda param=mapping['param']: print(self.switch_emote(param)))
+                for mapping in keymap['get_expression']
+            })
+            hotkeys[keymap['show_current_character']] = lambda: print(self.get_character())
+            self.hotkey_listener = GlobalHotKeys(hotkeys)
+            self.hotkey_listener.start()
+            print("[green]全局热键监听器已启动[/green]")
+            self.hotkey_listener.join()
+        elif PLATFORM.startswith('win'):
+            for mapping in keymap['switch_character']:
+                keyboard.add_hotkey(mapping['key'], lambda param=mapping['param']: print(self.switch_character(param)))
+            for mapping in keymap['get_expression']:
+                keyboard.add_hotkey(mapping['key'], lambda param=mapping['param']: print(self.switch_emote(param)))
+            keyboard.add_hotkey(keymap['show_current_character'], lambda: print(self.get_character()))
+            keyboard.add_hotkey(keymap['start_generate'], lambda: print(self.start()))
+            keyboard.add_hotkey(keymap['pause'], self.toggle_active)
+            keyboard.add_hotkey(keymap['delete_cache'], self.delete)
+            keyboard.add_hotkey(keymap['quit'], lambda: os._exit(0))
+            print("[green]全局热键监听器已启动[/green]")
+            keyboard.wait('esc')
 
     def run(self):
         """运行主程序"""

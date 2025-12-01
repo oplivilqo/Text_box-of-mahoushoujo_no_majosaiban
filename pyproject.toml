@@ -15,6 +15,7 @@ dependencies = [
   "psutil>=5.9.0",
   "pilmoji>=2.0.4",
   "emoji>=1.7.0",
+  "keyboard>=0.13.5; platform_system == \"Windows\"",
   "pywin32>=311; platform_system == \"Windows\"",
 ]
 
