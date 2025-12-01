@@ -47,6 +47,7 @@ class ManosabaTUI(App):
         Binding(keymap['delete_cache'], "delete_cache", "清除缓存", priority=True),
         Binding(keymap['quit'], "quit", "退出", priority=True),
         Binding(keymap['pause'], "pause", "暂停", priority=True),
+        Binding(keymap['reload'], "reload", "刷新角色", priority=True)
     ]
 
     def __init__(self):
@@ -90,8 +91,7 @@ class ManosabaTUI(App):
                                 char_name = self.textbox.get_character(char_id, full_name=True)
                                 yield RadioButton(
                                     f"{char_name} ({char_id})",
-                                    value=char_id == self.current_character,
-                                    id=f"char_{char_id}"
+                                    value=char_id == self.current_character
                                 )
 
                 with Vertical(id="emotion_panel"):
@@ -103,16 +103,14 @@ class ManosabaTUI(App):
                             # 第一个选项：随机表情
                             yield RadioButton(
                                 "随机表情",
-                                value=True,
-                                id="emotion_0"
+                                value=True
                             )
                             # 后续选项：使用文件名
                             for i in range(1, emotion_cnt + 1):
                                 display_name = emotion_names[i - 1] if (i - 1) < len(emotion_names) else f"表情 {i}"
                                 yield RadioButton(
                                     display_name,
-                                    value=False,
-                                    id=f"emotion_{i}"
+                                    value=False
                                 )
                 with Vertical(id="switch_panel"):
                     yield Label("自动粘贴: ", classes="switch_label")
@@ -215,29 +213,37 @@ class ManosabaTUI(App):
     def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
         """当RadioSet选项改变时"""
         if event.radio_set.id == "character_radio":
-            selected_char = event.pressed.id.replace("char_", "")
-            self.current_character = selected_char
+            # 从label中提取角色ID，格式为 "角色名 (char_id)"
+            label_text = event.pressed.label.plain
+            # 提取括号内的角色ID
+            import re
+            match = re.search(r'\(([^)]+)\)$', label_text)
+            if match:
+                selected_char = match.group(1)
+                self.current_character = selected_char
 
-            # 更新角色索引
-            char_idx = self.textbox.character_list.index(selected_char) + 1
-            self.textbox.switch_character(char_idx)
+                # 更新角色索引
+                char_idx = self.textbox.character_list.index(selected_char) + 1
+                self.textbox.switch_character(char_idx)
 
-            # 预加载新角色（使用带进度条的加载方法）
-            self.load_character_images(selected_char)
+                # 预加载新角色（使用带进度条的加载方法）
+                self.load_character_images(selected_char)
 
-            # 重新生成表情选项（延迟执行以确保状态更新完成）
-            self.call_after_refresh(self.refresh_emotion_panel)
+                # 重新生成表情选项（延迟执行以确保状态更新完成）
+                self.call_after_refresh(self.refresh_emotion_panel)
 
         elif event.radio_set.id == "emotion_radio":
-            # 从按钮 id 中提取表情编号
+            # 获取RadioButton在RadioSet中的索引作为表情编号
             try:
-                label = event.pressed.id
-                emotion_num = int(label.split('_')[-1])
+                emotion_radio = event.radio_set
+                buttons = list(emotion_radio.query(RadioButton))
+                emotion_num = buttons.index(event.pressed)
+
                 self.current_emotion = emotion_num
                 self.textbox.emote = emotion_num
                 self.update_status(f"已选择表情 {emotion_num} 喵" if emotion_num > 0 else "已选择随机表情喵")
             except (ValueError, AttributeError, IndexError) as e:
-                self.update_status(e)
+                self.update_status(str(e))
                 pass
 
     def refresh_emotion_panel(self) -> None:
@@ -261,7 +267,6 @@ class ManosabaTUI(App):
         emotion_names = self.textbox.get_current_emotion_names()
 
         for i in range(0, emotion_cnt + 1):
-            unique_id = f"emotion_{self.current_character}_{i}"
             if i == 0:
                 display_name = "随机表情"
             else:
@@ -269,10 +274,30 @@ class ManosabaTUI(App):
 
             btn = RadioButton(
                 display_name,
-                value=(self.textbox.emote == i),
-                id=unique_id
+                value=(self.textbox.emote == i)
             )
             emotion_radio.mount(btn)
+
+    def refresh_character_panel(self) -> None:
+        """刷新角色面板"""
+        char_radio = self.query_one("#character_radio", RadioSet)
+
+        # 获取所有子组件并逐个移除
+        children = list(char_radio.children)
+        for child in children:
+            try:
+                child.remove()
+            except Exception:
+                pass
+
+        # 添加新的按钮
+        for char_id in self.textbox.character_list:
+            char_name = self.textbox.get_character(char_id, full_name=True)
+            btn = RadioButton(
+                f"{char_name} ({char_id})",
+                value=char_id == self.current_character
+            )
+            char_radio.mount(btn)
 
     def update_status(self, msg: str) -> None:
         """更新状态栏"""
@@ -297,12 +322,7 @@ class ManosabaTUI(App):
     def action_delete_cache(self) -> None:
         """清除缓存（包括内存和磁盘）"""
         self.update_status("正在清除缓存...")
-
-        # 清除内存缓存
-        self.textbox.img_generator.clear_memory_cache()
-
-        # 清除磁盘缓存
-        self.textbox.delete()
+        self.textbox.delete_cache()
 
         cache_info = self.textbox.img_generator.get_cache_info()
         self.update_status(f"缓存已清除 (内存: {cache_info['chars_cnt']}角色, 背景: {cache_info['bg_cached']}张)")
@@ -310,6 +330,22 @@ class ManosabaTUI(App):
         # 重新加载当前角色
         char_name = self.textbox.get_character(self.current_character)
         self.load_character_images(char_name)
+
+    def action_reload(self)->None:
+        """刷新角色配置"""
+        # 重新加载配置文件
+        self.textbox.load_configs()
+        self.textbox.delete_cache()
+        self.update_status("角色配置已刷新。")
+
+        # 刷新角色列表
+        self.refresh_character_panel()
+
+        # 加载默认角色
+        char_name = self.textbox.get_character("sherri")
+        self.current_character = "sherri"
+        self.load_character_images(char_name)
+        self.refresh_emotion_panel()
 
     def action_quit(self) -> None:
         """退出应用"""

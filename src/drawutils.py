@@ -7,9 +7,9 @@ Align = Literal["left", "center", "right"]
 VAlign = Literal["top", "middle", "bottom"]
 
 IMG_SETTINGS = {
-    "max_width": 900,
-    "max_height": 600,
-    "quality": 65,
+    "max_width": 1200,
+    "max_height": 800,
+    "quality": 70,
     "resize_ratio": 0.7
 }
 

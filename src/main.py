@@ -113,17 +113,10 @@ class ManosabaTextBox:
         self.img_generator._ensure_character_loaded(character_name, emotion_cnt)
         return self.img_generator.get_emotion_names(character_name)
 
-    def delete(self) -> None:
-        """删除缓存文件夹中的所有jpg文件"""
-        self.img_generator.delete_cache()
-
-    def get_cache_info(self) -> dict:
-        """获取缓存信息"""
-        return self.img_generator.get_cache_info()
-
-    def clear_memory_cache(self) -> None:
-        """清空内存缓存"""
+    def delete_cache(self) -> None:
+        """清除缓存（包括内存和磁盘）"""
         self.img_generator.clear_memory_cache()
+        self.img_generator.delete_cache()
 
     def generate_and_save_images(self, character_name: str, progress_callback=None) -> None:
         """生成并保存指定角色的所有表情图片"""
@@ -271,7 +264,7 @@ class ManosabaTextBox:
             hotkeys = {
                 keymap['start_generate']: lambda: print(self.start()),
                 keymap['pause']: self.toggle_active,
-                keymap['delete_cache']: self.delete,
+                keymap['delete_cache']: self.delete_cache,
                 keymap['quit']: lambda: self.hotkey_listener.stop()
             }
             hotkeys.update({
@@ -295,7 +288,7 @@ class ManosabaTextBox:
             keyboard.add_hotkey(keymap['show_current_character'], lambda: print(self.get_character()))
             keyboard.add_hotkey(keymap['start_generate'], lambda: print(self.start()))
             keyboard.add_hotkey(keymap['pause'], self.toggle_active)
-            keyboard.add_hotkey(keymap['delete_cache'], self.delete)
+            keyboard.add_hotkey(keymap['delete_cache'], self.delete_cache)
             keyboard.add_hotkey(keymap['quit'], lambda: os._exit(0))
             print("[green]全局热键监听器已启动[/green]")
             keyboard.wait('esc')

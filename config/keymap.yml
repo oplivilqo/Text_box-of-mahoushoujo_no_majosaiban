@@ -66,7 +66,9 @@ win32:
   # 退出程序
   quit: "ctrl+q"
   # 暂停/继续
-  pause: "ctrl+r"
+  pause: "ctrl+p"
+  # 刷新角色列表
+  reload: "ctrl+r"
 
 
 # macOS热键配置
@@ -129,7 +131,8 @@ darwin:
 
   # 功能键
   start_generate: "<cmd>+e"
-  send_image: "enter"
+  send_image: "<enter>"
   delete_cache: "<ctrl>+d"
   quit: "<esc>"
   pause: "<ctrl>+<cmd>+r"
+  reload: "<ctrl>+<cmd>+p"
