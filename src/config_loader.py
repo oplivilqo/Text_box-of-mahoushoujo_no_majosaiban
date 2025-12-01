@@ -45,10 +45,12 @@ class ConfigLoader:
                         print(f"[yellow]警告: {chara_name} 的 meta.yml 缺少必需字段，已跳过[/yellow]")
                         continue
 
-                    png_files = [f for f in os.listdir(chara_dir) if f.lower().endswith('.png')]
-                    emotion_cnt = len(png_files)
+                    # 支持 png、jpg、jpeg 格式
+                    image_files = [f for f in os.listdir(chara_dir)
+                                   if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                    emotion_cnt = len(image_files)
                     if emotion_cnt == 0:
-                        print(f"[yellow]警告: {chara_name} 文件夹中没有PNG图片，已跳过[/yellow]")
+                        print(f"[yellow]警告: {chara_name} 文件夹中没有图片文件（PNG/JPG），已跳过[/yellow]")
                         continue
                     meta['emotion_count'] = emotion_cnt
                     mahoshojo[chara_name] = meta

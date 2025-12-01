@@ -31,9 +31,21 @@ class ImageGenerator:
         """预加载所有背景图到内存"""
         self._bg_cache.clear()
         for i in range(BG_CNT):
-            bg_path = os.path.join(
-                self.base_path, 'assets', "background", f"c{i + 1}.png"
-            )
+            # 尝试多种图片格式
+            bg_path = None
+            for ext in ['.png', '.jpg', '.jpeg']:
+                candidate = os.path.join(
+                    self.base_path, 'assets', "background", f"c{i + 1}{ext}"
+                )
+                if os.path.exists(candidate):
+                    bg_path = candidate
+                    break
+
+            if bg_path is None:
+                raise FileNotFoundError(
+                    f"找不到背景图 c{i + 1} 文件（支持PNG/JPG/JPEG格式）"
+                )
+
             bg_img = Image.open(bg_path).convert("RGBA")
             self._bg_cache.append(bg_img)
 
@@ -41,10 +53,21 @@ class ImageGenerator:
         """加载指定角色的所有表情到内存"""
         emotions = []
         for j in range(emotion_cnt):
-            avatar_path = os.path.join(
-                self.base_path, 'assets', 'chara', character_name,
-                f"{character_name} ({j + 1}).png"
-            )
+            avatar_path = None
+            for ext in ['.png', '.jpg', '.jpeg']:
+                candidate = os.path.join(
+                    self.base_path, 'assets', 'chara', character_name,
+                    f"{character_name} ({j + 1}){ext}"
+                )
+                if os.path.exists(candidate):
+                    avatar_path = candidate
+                    break
+
+            if avatar_path is None:
+                raise FileNotFoundError(
+                    f"找不到角色 {character_name} 的表情 {j + 1} 图片文件（支持PNG/JPG/JPEG格式）"
+                )
+
             avatar = self.fit_image(Image.open(avatar_path).convert("RGBA"))
             emotions.append(avatar)
         return emotions
