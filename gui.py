@@ -2,9 +2,9 @@
 
 import tkinter as tk
 from tkinter import ttk
-from PIL import ImageTk
+# from PIL import ImageTk
 import threading
-import time
+# import time
 
 from core import ManosabaCore
 from gui_settings import SettingsWindow
@@ -255,7 +255,10 @@ class ManosabaGUI:
 
         # 重置表情选择为第一个表情
         self.emotion_combo.set("表情 1")
-        self.core.selected_emotion = 1
+        if self.emotion_random_var.get():
+            self.core.selected_emotion = None
+        else:
+            self.core.selected_emotion = 1
 
         # 标记需要更新预览内容
         self.update_preview()

@@ -2,12 +2,12 @@
 
 import os
 import random
-# import io
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw #, ImageFont
 
-from text_fit_draw import draw_text_auto
+from text_fit_draw import draw_text_auto, load_font_cached
 from image_fit_paste import paste_image_auto
-from path_utils import get_resource_path, get_base_path
+from path_utils import get_resource_path
+from load_utils import load_background_safe, load_character_safe
 
 
 class ImageProcessor:
@@ -26,71 +26,25 @@ class ImageProcessor:
         self.mahoshojo = mahoshojo or {}
         self.background_count = 16
 
-        # 缓存系统
-        self.background_cache = {}
-        self.character_cache = {}
-        self.base_image_cache = {}
-
-        # 字体缓存
-        self.font_cache = {}
-
         # 当前预览的基础图片（用于快速生成）
         self.current_base_image = None
-        self.current_base_key = None
-
-    def _compress_image(self, image: Image.Image, compression_settings: dict) -> Image.Image:
-        """压缩图像"""
-        if not compression_settings.get("pixel_reduction_enabled", False):
-            return image
-
-        compressed_image = image
-        
-        # 应用像素减少压缩
-        if compression_settings.get("pixel_reduction_enabled", False):
-            reduction_ratio = compression_settings.get("pixel_reduction_ratio", 50) / 100.0
-            
-            if reduction_ratio > 0 and reduction_ratio < 1:
-                new_width = int(image.width * (1 - reduction_ratio))
-                new_height = int(image.height * (1 - reduction_ratio))
-                
-                # 确保最小尺寸
-                new_width = max(new_width, 300) #保持大致比例
-                new_height = max(new_height, 100)
-                
-                # 使用高质量下采样
-                compressed_image = compressed_image.resize(
-                    (new_width, new_height), 
-                    Image.Resampling.LANCZOS
-                )
-        
-        return compressed_image
 
     def _load_background(self, background_index: int) -> Image.Image:
-        """加载背景图片到缓存"""
-        if background_index not in self.background_cache:
-            # 使用资源路径获取
-            background_path = get_resource_path(os.path.join("assets", "background", f"c{background_index}.png"))
-            if os.path.exists(background_path):
-                self.background_cache[background_index] = Image.open(
-                    background_path
-                ).convert("RGBA")
-            else:
-                # 如果背景文件不存在，创建一个默认的背景
-                self.background_cache[background_index] = Image.new(
-                    "RGBA", (800, 600), (100, 100, 200)
-                )
-        return self.background_cache[background_index].copy()
+        """加载背景图片 - 使用全局背景缓存"""
+        # 使用资源路径获取
+        background_path = get_resource_path(os.path.join("assets", "background", f"c{background_index}.png"))
+        # 使用专门的背景图片加载函数
+        return load_background_safe(
+            background_path, 
+            default_size=(800, 600), 
+            default_color=(100, 100, 200)
+        )
 
     def _load_character_image(
         self, character_name: str, emotion_index: int
     ) -> Image.Image:
-        """加载角色图片"""
-        # 检查缓存
-        cache_key = f"{character_name}_{emotion_index}"
-        if cache_key in self.character_cache:
-            return self.character_cache[cache_key].copy()
-
-        # 缓存未命中，从文件加载
+        """加载角色图片 - 使用全局角色缓存"""
+        # 使用资源路径获取
         overlay_path = get_resource_path(os.path.join(
             "assets",
             "chara",
@@ -98,15 +52,12 @@ class ImageProcessor:
             f"{character_name} ({emotion_index}).png"
         ))
 
-        if os.path.exists(overlay_path):
-            image = Image.open(overlay_path).convert("RGBA")
-            self.character_cache[cache_key] = image
-            return image.copy()
-        else:
-            # 如果角色图片不存在，创建一个透明的占位图
-            placeholder = Image.new("RGBA", (800, 600), (0, 0, 0, 0))
-            self.character_cache[cache_key] = placeholder
-            return placeholder.copy()
+        # 使用专门的角色图片加载函数
+        return load_character_safe(
+            overlay_path, 
+            default_size=(800, 600), 
+            default_color=(0, 0, 0, 0)
+        )
 
     def preload_character_images(self, character_name: str):
         """预加载角色图片到内存"""
@@ -116,7 +67,7 @@ class ImageProcessor:
         emotion_count = self.mahoshojo[character_name].get("emotion_count", 0)
 
         for emotion_index in range(1, emotion_count + 1):
-            # 触发加载并缓存
+            # 触发加载并缓存到全局角色缓存
             self._load_character_image(character_name, emotion_index)
 
     def get_character_font(self, character_name: str) -> str:
@@ -128,59 +79,10 @@ class ImageProcessor:
             # 默认字体
             return get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
 
-    def _get_font(self, font_path: str, font_size: int) -> ImageFont.FreeTypeFont:
-        """获取字体对象，带缓存"""
-        cache_key = f"{font_path}_{font_size}"
-        if cache_key not in self.font_cache:
-            try:
-                self.font_cache[cache_key] = ImageFont.truetype(font_path, font_size)
-            except Exception as e:
-                print(f"加载字体失败 {font_path}: {e}")
-                # 回退到默认字体
-                default_font_path = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
-                try:
-                    self.font_cache[cache_key] = ImageFont.truetype(
-                        default_font_path, font_size
-                    )
-                except:
-                    self.font_cache[cache_key] = ImageFont.load_default()
-        return self.font_cache[cache_key]
-
-    # def _get_available_fonts(self):
-    #     """获取可用的字体列表"""
-    #     project_fonts = []
-    #     system_fonts = []
-        
-    #     # 在打包环境中，优先查找程序旁边的assets/fonts文件夹
-    #     # 首先尝试程序目录下的assets/fonts
-    #     base_path = get_base_path()  # 使用get_base_path()而不是__file__
-    #     external_font_dir = os.path.join(base_path, "assets", "fonts")
-        
-    #     # 如果外部字体目录存在，优先使用
-    #     if os.path.exists(external_font_dir):
-    #         for file in os.listdir(external_font_dir):
-    #             if file.lower().endswith(('.ttf', '.otf', '.ttc')):
-    #                 project_fonts.append(os.path.join(external_font_dir, file))
-        
-    #     # 如果外部目录没有找到字体，再尝试资源路径
-    #     if not project_fonts:
-    #         font_dir = get_resource_path(os.path.join("assets", "fonts"))
-    #         if os.path.exists(font_dir):
-    #             for file in os.listdir(font_dir):
-    #                 if file.lower().endswith(('.ttf', '.otf', '.ttc')):
-    #                     project_fonts.append(os.path.join(font_dir, file))
-        
-    #     return project_fonts, system_fonts
-
     def generate_base_image_with_text(
         self, character_name: str, background_index: int, emotion_index: int
     ) -> Image.Image:
         """生成带角色文字的基础图片"""
-        cache_key = f"{character_name}_{background_index}_{emotion_index}"
-
-        if cache_key in self.base_image_cache:
-            return self.base_image_cache[cache_key].copy()
-
         # 生成基础图片（包含角色名称文字）
         background = self._load_background(background_index)
         overlay = self._load_character_image(character_name, emotion_index)
@@ -189,7 +91,7 @@ class ImageProcessor:
         result = background
         result.paste(overlay, (0, 134), overlay)
 
-        # 添加角色名称文字 - 使用角色专用字体，保持不变
+        # 添加角色名称文字
         if self.text_configs_dict and character_name in self.text_configs_dict:
             draw = ImageDraw.Draw(result)
             shadow_offset = (2, 2)
@@ -201,9 +103,9 @@ class ImageProcessor:
                 font_color = tuple(config["font_color"])
                 font_size = config["font_size"]
 
-                # 使用角色专用字体（保持不变）
+                # 使用角色专用字体
                 font_path = self.get_character_font(character_name)
-                font = self._get_font(font_path, font_size)
+                font = load_font_cached(font_path, font_size)
 
                 # 绘制阴影文字
                 shadow_position = (
@@ -215,8 +117,7 @@ class ImageProcessor:
                 # 绘制主文字
                 draw.text(position, text, fill=font_color, font=font)
 
-        self.base_image_cache[cache_key] = result
-        return result.copy()
+        return result
 
     def generate_image_fast(
         self,
@@ -238,7 +139,7 @@ class ImageProcessor:
             # 调用粘贴图像函数，它返回的是字节数据
             result = paste_image_auto(
                 image_source=base_image,
-                image_overlay=None,
+                # image_overlay=None,
                 top_left=text_box_topleft,
                 bottom_right=image_box_bottomright,
                 content_image=content_image,
@@ -247,19 +148,20 @@ class ImageProcessor:
                 padding=12,
                 allow_upscale=True,
                 keep_alpha=True,
-                role_name=character_name,
-                text_configs_dict=self.text_configs_dict,
-                base_path=self.base_path,
-                overlay_offset=(0, 134),
+                # role_name=character_name,
+                # text_configs_dict=self.text_configs_dict,
+                # base_path=self.base_path,
+                # overlay_offset=(0, 134),
             )
-        elif text is not None and text != "":
+            base_image=result
+        if text is not None and text != "":
             # 使用设置的字体大小作为最大字体大小
             max_font_height = font_size if font_size else 145
             
             # 调用绘制文本函数，它返回的是字节数据
             result = draw_text_auto(
                 image_source=base_image,
-                image_overlay=None,
+                # image_overlay=None,
                 top_left=text_box_topleft,
                 bottom_right=image_box_bottomright,
                 text=text,
@@ -268,31 +170,9 @@ class ImageProcessor:
                 color=(255, 255, 255),
                 max_font_height=max_font_height,
                 font_path=font_path,
-                # role_name=character_name,
-                # text_configs_dict=self.text_configs_dict,
-                # base_path=self.base_path,
-                overlay_offset=(0, 134),
+                # overlay_offset=(0, 134),
                 compression_settings=compression_settings
             )
-
-        # 统一处理结果
-        # if isinstance(result, bytes):
-        #     # 如果是字节数据，转换为图像进行处理
-        #     result_image = Image.open(io.BytesIO(result))
-        # elif isinstance(result, Image.Image):
-        #     # 如果是图像对象，直接使用
-        #     result_image = result
-        # else:
-        #     raise ValueError(f"返回了未知类型: {type(result)}")
-
-        # 应用压缩
-        # if compression_settings and compression_settings.get("pixel_reduction_enabled", False):
-        #     result_image = self._compress_image(result_image, compression_settings)
-
-        # 转换为PNG字节
-        # output_bytes = io.BytesIO()
-        # result_image.save(output_bytes, format="PNG")
-        # return output_bytes.getvalue()
         return result
 
     def generate_preview_image(
@@ -304,20 +184,17 @@ class ImageProcessor:
     ) -> Image.Image:
         """生成预览图片 - 同时缓存基础图片用于快速生成"""
         try:
-            # 生成基础图片并缓存
+            # 生成基础图片
             base_image = self.generate_base_image_with_text(
                 character_name, background_index, emotion_index
             )
 
-            # 缓存当前基础图片用于快速生成
+            # 记录当前图片用于快速生成
             self.current_base_image = base_image#.copy()
-            self.current_base_key = (
-                f"{character_name}_{background_index}_{emotion_index}"
-            )
 
             # 调整大小用于预览
             preview_image = base_image.copy()
-            preview_image.thumbnail(preview_size, Image.Resampling.LANCZOS)
+            preview_image.thumbnail(preview_size, Image.Resampling.BILINEAR)
 
             return preview_image
         except Exception as e:
@@ -327,12 +204,3 @@ class ImageProcessor:
     def get_random_background(self) -> int:
         """随机选择背景"""
         return random.randint(1, self.background_count)
-
-    def clear_cache(self):
-        """清理缓存以释放内存"""
-        self.background_cache.clear()
-        self.character_cache.clear()
-        self.base_image_cache.clear()
-        # self.font_cache.clear()
-        self.current_base_image = None
-        self.current_base_key = None

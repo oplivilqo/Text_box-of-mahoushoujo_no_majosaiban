@@ -3,6 +3,7 @@
 import threading
 import time
 import keyboard
+from load_utils import clear_cache
 
 
 class HotkeyManager:
@@ -148,7 +149,7 @@ class HotkeyManager:
 
         if self.core.switch_character(new_index):
             # 切换角色后清理缓存
-            self.core.image_processor.clear_cache()
+            clear_cache("character")
             # 更新GUI显示
             self.gui.character_var.set(
                 f"{self.core.get_character(full_name=True)} ({self.core.get_character()})"

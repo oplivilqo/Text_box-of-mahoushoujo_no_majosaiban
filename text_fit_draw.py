@@ -3,88 +3,13 @@ from io import BytesIO
 from typing import Tuple, Union, Literal
 from PIL import Image, ImageDraw, ImageFont
 from pilmoji import Pilmoji
-import os
-# import sys
-# import logging
+# import os
 
-# logger = logging.getLogger(__name__)
-
-# 字体缓存
-_font_cache = {}
-
-#暂时用不上，总是先注释了
-
-# ===== PyInstaller 资源路径处理函数 =====
-# def get_resource_path(relative_path):
-#     try:
-#         # 打包后：sys.executable 是 exe 的路径
-#         if getattr(sys, 'frozen', False):
-#             # 获取 exe 所在目录
-#             base_path = os.path.dirname(sys.executable)
-#         else:
-#             # 开发环境：脚本文件所在目录
-#             base_path = os.path.dirname(os.path.abspath(__file__))
-#     except Exception:
-#         base_path = os.path.dirname(os.path.abspath(__file__))
-    
-#     return os.path.join(base_path, relative_path)
+from load_utils import load_font_cached
 
 Align = Literal["left", "center", "right"]
 VAlign = Literal["top", "middle", "bottom"]
 
-# IMAGE_SETTINGS = {
-#     "max_width": 1200,
-#     "max_height": 800,
-#     "quality": 65,
-#     "resize_ratio": 0.7
-# }
-
-# def draw_name(base_img,text_configs_dict,role_name):
-#     if text_configs_dict and role_name in text_configs_dict:
-#         regular_draw = ImageDraw.Draw(base_img)
-#         shadow_offset = (2, 2)
-#         shadow_color = (0, 0, 0)
-        
-#         for config in text_configs_dict[role_name]:
-#             char_text = config["text"]
-#             if not char_text:  #跳过空文本
-#                 continue
-#             position = config["position"]
-#             font_color = config["font_color"]
-#             font_size = config["font_size"]
-        
-#             #使用新的assets/fonts路径
-#             font_path_char = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
-#             char_font = _load_font_cached(font_path_char, font_size)
-            
-#             shadow_position = (position[0] + shadow_offset[0], position[1] + shadow_offset[1])
-            
-#             regular_draw.text(shadow_position, char_text, fill=shadow_color, font=char_font)
-#             regular_draw.text(position, char_text, fill=font_color, font=char_font)
-#         return base_img
-#     else:
-#         logger.warning("未找到角色 %s 的文字配置", role_name)
-#         return base_img
-
-# def compress_image(image: Image.Image) -> Image.Image:
-#     width, height = image.size
-    
-#     new_width = int(width * IMAGE_SETTINGS["resize_ratio"])
-#     new_height = int(height * IMAGE_SETTINGS["resize_ratio"])
-    
-#     # 限制最大尺寸
-#     if new_width > IMAGE_SETTINGS["max_width"]:
-#         ratio = IMAGE_SETTINGS["max_width"] / new_width
-#         new_width, new_height = IMAGE_SETTINGS["max_width"], int(new_height * ratio)
-    
-#     if new_height > IMAGE_SETTINGS["max_height"]:
-#         ratio = IMAGE_SETTINGS["max_height"] / new_height
-#         new_height, new_width = IMAGE_SETTINGS["max_height"], int(new_width * ratio)
-    
-#     # 使用更快的BILINEAR插值（质量略降但速度更快）
-#     return image.resize((new_width, new_height), Image.Resampling.BILINEAR)
-
-# 方法1：Unicode范围检测（来自1.py）
 def is_emoji_unicode(char: str) -> bool:
     code = ord(char)
     return (
@@ -98,17 +23,6 @@ def is_emoji_unicode(char: str) -> bool:
         0x2700 <= code <= 0x27BF       # 装饰符号
     )
 
-#缓存字体
-def _load_font_cached(font_path: str, size: int) -> ImageFont.FreeTypeFont:
-    cache_key = f"{font_path}_{size}"
-    if cache_key not in _font_cache:
-        if font_path and os.path.exists(font_path):
-            _font_cache[cache_key] = ImageFont.truetype(font_path, size=size)
-        else:
-            # logger.exception("字体文件不存在")
-            raise FileNotFoundError("字体文件不存在")
-    return _font_cache[cache_key]
-
 def draw_text_auto(
     image_source: Union[str, Image.Image],
     top_left: Tuple[int, int],
@@ -121,11 +35,8 @@ def draw_text_auto(
     valign: VAlign = "middle",
     line_spacing: float = 0.15,#行距
     bracket_color: Tuple[int, int, int] = (137,177,251),  # 中括号及内部内容颜色
-    image_overlay: Union[str, Image.Image,None]=None,
-    # role_name: str = "unknown",  # 添加角色名称参数
-    # text_configs_dict: dict = None,  # 添加文字配置字典参数
-    # base_path: str = None,
-    overlay_offset: Tuple[int, int] = (0, 0),
+    # image_overlay: Union[str, Image.Image,None]=None,
+    # overlay_offset: Tuple[int, int] = (0, 0),
     compression_settings: dict = None
 ) -> bytes:
     """
@@ -142,11 +53,11 @@ def draw_text_auto(
     pilmoji = None
     temp_draw = ImageDraw.Draw(img)
 
-    if image_overlay is not None:
-        if isinstance(image_overlay, Image.Image):
-            img_overlay = image_overlay.copy()
-        else:
-            img_overlay = Image.open(image_overlay).convert("RGBA") if os.path.isfile(image_overlay) else None
+    # if image_overlay is not None:
+    #     if isinstance(image_overlay, Image.Image):
+    #         img_overlay = image_overlay.copy()
+    #     else:
+    #         img_overlay = Image.open(image_overlay).convert("RGBA") if os.path.isfile(image_overlay) else None
 
     x1, y1 = top_left
     x2, y2 = bottom_right
@@ -156,7 +67,7 @@ def draw_text_auto(
 
     #字体加载
     def _load_font(size: int) -> ImageFont.FreeTypeFont:
-        return _load_font_cached(font_path, size)
+        return load_font_cached(font_path, size)
     
     #检测文本中是否有emoji
     has_emoji = False
@@ -336,43 +247,12 @@ def draw_text_auto(
             break
 
     #覆盖置顶图层
-    if image_overlay is not None and img_overlay is not None:
-        img.paste(img_overlay, overlay_offset, img_overlay)
-    elif image_overlay is not None:
-        print("Warning: overlay image is not exist.")
+    # if image_overlay is not None and img_overlay is not None:
+    #     img.paste(img_overlay, overlay_offset, img_overlay)
+    # elif image_overlay is not None:
+    #     print("Warning: overlay image is not exist.")
 
-    # 自动在图片上写角色专属文字 （预览图上已经有名字了）
-    # if text_configs_dict and role_name in text_configs_dict:
-    #     shadow_offset = (2, 2)
-    #     shadow_color = (0, 0, 0)
-
-    #     for config in text_configs_dict[role_name]:
-    #         text = config["text"]
-    #         position = tuple(config["position"])
-    #         font_color = tuple(config["font_color"])
-    #         font_size = config["font_size"]
-
-    #         # 使用优化的字体加载
-    #         font_path_char = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
-    #         try:
-    #             role_font = _load_font_cached(font_path_char, font_size)
-    #         except:
-    #             try:
-    #                 role_font = ImageFont.load_default()
-    #             except:
-    #                 print("无法加载任何字体，跳过角色专属文字绘制")
-    #                 continue
-
-    #         # 绘制阴影文字
-    #         shadow_position = (
-    #             position[0] + shadow_offset[0],
-    #             position[1] + shadow_offset[1],
-    #         )
-    #         temp_draw.text(shadow_position, text, fill=shadow_color, font=role_font)
-
-    #         # 绘制主文字
-    #         temp_draw.text(position, text, fill=font_color, font=role_font)
-
+    # 压缩图片
     img = compress_image(img,compression_settings)
     
     # --- 9. 输出 PNG ---

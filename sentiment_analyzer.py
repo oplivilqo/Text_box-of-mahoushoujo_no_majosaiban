@@ -10,6 +10,8 @@ class SentimentAnalyzer:
         self.is_initialized = False
         self.emotion_list = ["无感情", "愤怒", "嫌弃", "疑惑", "惊讶", "伤心", "害羞", "开心", "恐惧", "无语", "大笑"]
         
+        self.selected_emotion = None #用来在generate_image里显示选择的表情
+
         # 更严格的规则提示词
         self.rule_prompt = """你是一个专门分析日常聊天文本的情感分析助手。你的任务是：分析用户输入文本的情感，并从以下11个选项中选择最匹配的一个：["无感情", "愤怒", "嫌弃", "疑惑", "惊讶", "伤心", "害羞", "开心", "恐惧", "无语", "大笑"]。
 
@@ -169,10 +171,10 @@ class SentimentAnalyzer:
                 print(f"AI原始回复: {response}")
                 
                 # 提取情感
-                emotion = self._extract_emotion(response)
+                self.selected_emotion = self._extract_emotion(response)
                 
-                if emotion:
-                    return emotion
+                if self.selected_emotion:
+                    return self.selected_emotion
                 
                 # 如果不在列表中，重新发送规则
                 if attempt < max_retries:

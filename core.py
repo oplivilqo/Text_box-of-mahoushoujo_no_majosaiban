@@ -22,6 +22,7 @@ from config import ConfigLoader, AppConfig
 from clipboard_utils import ClipboardManager
 from image_processor import ImageProcessor
 from sentiment_analyzer import SentimentAnalyzer
+from load_utils import clear_cache
 
 class ManosabaCore:
     """魔裁文本框核心类"""
@@ -312,7 +313,7 @@ class ManosabaCore:
         emotion_index = self._get_emotion_by_sentiment(text)
         if emotion_index:
             self.selected_emotion = emotion_index
-            self.preview_emotion = emotion_index
+            # self.preview_emotion = emotion_index
             return True
         return False
 
@@ -344,7 +345,7 @@ class ManosabaCore:
 
     def switch_character(self, index: int) -> bool:
         """切换到指定索引的角色"""
-        self.image_processor.clear_cache()
+        clear_cache("character")
         if 0 < index <= len(self.character_list):
             self.current_character_index = index
             character_name = self.get_character()
@@ -539,8 +540,9 @@ class ManosabaCore:
                 self.update_status("情感分析完成，更新表情")
                 print(f"[{int((time.time()-start_time)*1000)}] 情感分析完成")
                 # 刷新预览以显示新的表情
+                base_msg += f"情感: {self.sentiment_analyzer.selected_emotion}  "
                 self.generate_preview(self.preview_size if hasattr(self, 'preview_size') else (400, 300))
-                base_msg += f"情感: {self.sentiment_analyzer.emotion_list[selected_emotion_by_ai]}  "
+                
             else:
                 self.update_status("情感分析失败，使用默认表情")
                 self.selected_emotion = None
@@ -575,16 +577,14 @@ class ManosabaCore:
             else:
                 font_path = self.get_current_font()  # 使用角色专用字体
 
-            # 获取压缩设置
-            compression_settings = self.gui_settings.get("image_compression", {})
-
+            # 生成图片
             png_bytes = self.image_processor.generate_image_fast(
                 character_name,
                 text,
                 image,
                 font_path,
                 font_size,
-                compression_settings,  # 传递压缩设置
+                self.gui_settings.get("image_compression", {})
             )
 
             print(f"[{int((time.time()-start_time)*1000)}] 图片合成完成")
