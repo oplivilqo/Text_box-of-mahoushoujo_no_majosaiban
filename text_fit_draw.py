@@ -3,6 +3,8 @@ from io import BytesIO
 from typing import Tuple, Union, Literal
 from PIL import Image, ImageDraw, ImageFont
 from pilmoji import Pilmoji
+# import textwrap
+import time
 # import os
 
 from load_utils import load_font_cached
@@ -30,7 +32,7 @@ def draw_text_auto(
     text: str,
     color: Tuple[int, int, int] = (0, 0, 0),
     max_font_height: int | None = None,
-    font_path: str | None = None,
+    font_name: str | None = None,  # 改为字体名称参数
     align: Align = "center",
     valign: VAlign = "middle",
     line_spacing: float = 0.15,#行距
@@ -57,9 +59,11 @@ def draw_text_auto(
         raise ValueError("无效的文字区域。")
     region_w, region_h = x2 - x1, y2 - y1
 
-    #字体加载
+    #字体加载 - 简化版本，直接使用字体名称
     def _load_font(size: int) -> ImageFont.FreeTypeFont:
-        return load_font_cached(font_path, size)
+        # 如果没有提供字体名称，使用默认字体
+        font_to_use = font_name if font_name else "font3.ttf"
+        return load_font_cached(font_to_use, size)
     
     #检测文本中是否有emoji
     has_emoji = False
@@ -70,6 +74,31 @@ def draw_text_auto(
                 break
     except Exception:
         has_emoji = False
+
+    # def wrap_lines2(txt: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
+    #     """使用textwrap模块优化的文本分行函数"""
+        
+    #     # 计算平均字符宽度，用于估算每行字符数
+    #     avg_char_width = temp_draw.textlength("中", font=font)  # 使用中文字符作为基准
+    #     approx_chars_per_line = max(1, int(max_w / avg_char_width))
+        
+    #     # 使用textwrap.wrap进行智能分行
+    #     lines = textwrap.wrap(
+    #         txt, 
+    #         width=approx_chars_per_line,
+    #         expand_tabs=False,
+    #         replace_whitespace=False,
+    #         drop_whitespace=False,
+    #         break_long_words=True,  # 允许长单词换行
+    #         break_on_hyphens=False,
+    #         fix_sentence_endings=True
+    #     )
+        
+    #     # 如果textwrap没有返回任何行（空文本情况）
+    #     if not lines and txt.strip():
+    #         lines = [txt]
+        
+    #     return lines
 
     #文本分行
     def wrap_lines(txt: str, font: ImageFont.FreeTypeFont, max_w: int) -> list[str]:
@@ -136,6 +165,8 @@ def draw_text_auto(
     lo, best_size, best_lines, best_line_h, best_block_h = 1, 0, [], 0, 0
 
     #如果文本包含emoji，则在搜索阶段使用"田"占位
+    st=time.time()
+    print("搜索最大字号前耗时:",int((time.time()-st)*1000))
     if has_emoji:
         measurement_text = ''.join('田' if is_emoji_unicode(ch) else ch for ch in text)
         pilmoji = Pilmoji(img)
@@ -165,7 +196,8 @@ def draw_text_auto(
     best_lines = wrap_lines(text, font, region_w)
     #重新测量真实行高与总高
     _, best_block_h, best_line_h = measure_block(best_lines, font)
-
+    print("搜索最大字号耗时:",int((time.time()-st)*1000))
+    
     # --- 6. 解析着色片段 ---
     def parse_color_segments(s: str, bracket_stack: list) -> Tuple[list[tuple[str, Tuple[int, int, int]]], list]:
         """解析颜色片段，返回片段列表和更新后的括号栈"""
@@ -174,9 +206,9 @@ def draw_text_auto(
         
         # 定义成对的括号和引号，包括左右相同的英文引号
         bracket_pairs = {
-            '[': ']', '【': '】', '〔': '〕', '（': '）',
-            '‘': '’', '「': '」', '｢': '｣', '《': '》', '〈': '〉',
-            '"': '"', "'": "'", '`': '`',  # 英文引号，左右相同
+            '[': ']', '【': '】', '〔': '〕', '（': '）', '(': ')',
+            '‘': '’', '「': '」', '｢': '｣','『': '』','〖': '〗','<':'>','《': '》', '〈': '〉','“': '”',
+            '"': '"', "'": "'", '`': '`',
         }
         
         for ch in s:
@@ -273,10 +305,11 @@ def draw_text_auto(
     # 压缩图片
     img = compress_image(img,compression_settings)
     
-    # --- 9. 输出 PNG ---
+    # --- 9. 输出 BMP ---
     buf = BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
+    img.convert("RGB").save(buf, format="BMP")
+    bmp_data = buf.getvalue()[14:]
+    return bmp_data
 
 def compress_image(image: Image.Image, compression_settings: dict) -> Image.Image:
     """压缩图像"""

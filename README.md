@@ -9,9 +9,10 @@
 4. 兼容TUI (暂无计划)
 
 ## BUG记录
-1. emoji绘制需要联网，而且网络不好时，带emoji的文本可能生成失败（pilmoji库的问题）
-2. 同时剪切图像和文本时总是只有文本能正常显示（图像似乎无法提取出来）
-3. 快捷键编辑页无法用滚轮滚动
+1. 强调字符只有半边时着色有问题（暂时没找着效率比较好的方法）
+2. emoji绘制需要联网，而且网络不好时，带emoji的文本可能生成失败（pilmoji库的问题）
+3. 同时剪切图像和文本时总是只有文本能正常显示（图像似乎无法提取出来）
+4. 快捷键编辑页无法用滚轮滚动
 
 ## 修改说明
 本仓库由YangQwQ基于[oplivilqo的项目](https://github.com/oplivilqo/manosaba_text_box)二次开发，基于Tkinter实现了图形化用户界面以及其它实用功能
@@ -32,7 +33,7 @@
 <img width="802" height="754" alt="image" src="https://github.com/user-attachments/assets/7cedbf8f-0124-43af-9314-41f1b5611e9b" />
 
 ## 设置界面  
-<img width="602" height="732" alt="image" src="https://github.com/user-attachments/assets/afb9e178-8772-4a15-bf59-f85f680b1f1c" />
+<img width="502" height="782" alt="image" src="https://github.com/user-attachments/assets/474b6a0f-dd80-40a3-b305-81174317e469" />
 
 ## 使用须知
 1. 目前程序还有很多细节部分会在后续优化
@@ -85,8 +86,11 @@
    - 输入文本 - 在聊天框或文本编辑器中输入想要添加的文本
    - 图片预览 - 在发送前预览图片效果
    - 生成图片 - 按下 `Ctrl+E` 键自动生成并发送
-4. 修改字体：
+4. 字体字号及颜色说明：
    - 字体文件放置在`<根目录>/assets/fonts`文件夹中，然后打开设置即可修改
+   - 字体大小和颜色可以在设置中修改
+   - 关于强调字体颜色，如下图所示：
+   <img width="1280" height="417" alt="image" src="https://github.com/user-attachments/assets/342015e0-2cfe-4636-ac27-ded37d13347a" />
 5. 表情匹配设置：
    - 表情匹配功能默认关闭，需要在设置中开启
    - 可以下载ollama运行本地模型，也可以使用deepseek的api，需要其它模型的话请自行在setting.yml里面添加
@@ -152,6 +156,11 @@ warden:
 另外，若要使用角色，请下载对应角色文件夹并放到项目文件夹的`assets/chara`文件夹中
 
 ## 更新日志
+
+### v1.5
+- 提升图片合成性能（大概省了130ms左右）
+- 修复了以下bug：
+  + exe程序读取不到文件的bug
 
 ### v1.4
 - 改为使用openai模块与ai通信

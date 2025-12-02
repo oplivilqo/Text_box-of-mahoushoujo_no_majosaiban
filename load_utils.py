@@ -46,8 +46,14 @@ def preload_all_images_async(base_path: str, mahoshojo: dict, callback=None):
 
 def _preload_backgrounds(base_path: str):
     """预加载所有背景图片"""
-    background_dir = os.path.join(base_path, "assets", "background")
+    # 使用get_resource_path获取正确的资源路径，支持打包环境
+    background_dir = get_resource_path(os.path.join("assets", "background"))
     if not os.path.exists(background_dir):
+        print(f"警告：背景图片目录不存在: {background_dir}")
+        # 即使目录不存在，也要标记为已完成，避免卡在0%
+        _preload_status["backgrounds_loaded"] = True
+        _preload_status["total_backgrounds"] = 0
+        _preload_status["loaded_backgrounds"] = 0
         return
     
     # 获取所有背景图片文件
@@ -69,14 +75,22 @@ def _preload_backgrounds(base_path: str):
 def _preload_characters(base_path: str, mahoshojo: dict):
     """预加载所有角色图片"""
     if not mahoshojo:
+        _preload_status["characters_loaded"] = True
+        _preload_status["total_characters"] = 0
+        _preload_status["loaded_characters"] = 0
         return
     
-    chara_dir = os.path.join(base_path, "assets", "chara")
+    # 使用get_resource_path获取正确的资源路径，支持打包环境
+    chara_dir = get_resource_path(os.path.join("assets", "chara"))
     if not os.path.exists(chara_dir):
+        print(f"警告：角色图片目录不存在: {chara_dir}")
+        # 即使目录不存在，也要标记为已完成，避免卡在0%
+        _preload_status["characters_loaded"] = True
+        _preload_status["total_characters"] = 0
+        _preload_status["loaded_characters"] = 0
         return
     
     total_characters = 0
-    loaded_characters = 0
     
     # 计算总角色图片数量
     for character_name in mahoshojo.keys():
@@ -106,6 +120,17 @@ def _preload_characters(base_path: str, mahoshojo: dict):
     
     _preload_status["characters_loaded"] = True
 
+def get_preload_progress():
+    """获取预加载进度"""
+    total_items = _preload_status["total_backgrounds"] + _preload_status["total_characters"]
+    loaded_items = _preload_status["loaded_backgrounds"] + _preload_status["loaded_characters"]
+    
+    if total_items == 0:
+        # 如果没有可加载的项目，直接返回100%完成
+        return 1.0
+    
+    return loaded_items / total_items
+
 def get_preload_status():
     """获取预加载状态"""
     return _preload_status.copy()
@@ -114,26 +139,28 @@ def is_preloading_complete():
     """检查预加载是否完成"""
     return _preload_status["backgrounds_loaded"] and _preload_status["characters_loaded"]
 
-def get_preload_progress():
-    """获取预加载进度"""
-    total_items = _preload_status["total_backgrounds"] + _preload_status["total_characters"]
-    loaded_items = _preload_status["loaded_backgrounds"] + _preload_status["loaded_characters"]
-    
-    if total_items == 0:
-        return 0.0
-    
-    return loaded_items / total_items
-
 
 #缓存字体
-def load_font_cached(font_path: str, size: int) -> ImageFont.FreeTypeFont:
-    cache_key = f"{font_path}_{size}"
+def load_font_cached(font_name: str, size: int) -> ImageFont.FreeTypeFont:
+    """使用字体名称加载字体，支持打包环境"""
+    cache_key = f"{font_name}_{size}"
     if cache_key not in _font_cache:
-        if font_path and os.path.exists(font_path):
-            _font_cache[cache_key] = ImageFont.truetype(font_path, size=size)
+        # 构建字体路径
+        font_path = os.path.join("assets", "fonts", font_name)
+        resolved_font_path = get_resource_path(font_path)
+        
+        if os.path.exists(resolved_font_path):
+            _font_cache[cache_key] = ImageFont.truetype(resolved_font_path, size=size)
         else:
-            # logger.exception("字体文件不存在")
-            raise FileNotFoundError("字体文件不存在")
+            # 如果字体文件不存在，尝试使用默认字体
+            default_font_path = get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
+            if os.path.exists(default_font_path):
+                _font_cache[cache_key] = ImageFont.truetype(default_font_path, size=size)
+                print(f"警告：字体文件不存在，使用默认字体: {font_name}")
+            else:
+                # 如果默认字体也不存在，使用系统默认字体
+                _font_cache[cache_key] = ImageFont.load_default()
+                print(f"警告：字体文件不存在，使用系统默认字体: {font_name}")
     return _font_cache[cache_key]
 
 # 缓存背景图片加载（长期缓存）

@@ -52,7 +52,7 @@ def get_available_fonts():
     if os.path.exists(external_font_dir):
         for file in os.listdir(external_font_dir):
             if file.lower().endswith(('.ttf', '.otf', '.ttc')):
-                project_fonts.append(os.path.join(external_font_dir, file))
+                project_fonts.append(file)  # 只返回字体文件名
     
     # 如果外部目录没有找到字体，再尝试资源路径
     if not project_fonts:
@@ -60,6 +60,12 @@ def get_available_fonts():
         if os.path.exists(font_dir):
             for file in os.listdir(font_dir):
                 if file.lower().endswith(('.ttf', '.otf', '.ttc')):
-                    project_fonts.append(os.path.join(font_dir, file))
+                    project_fonts.append(file)  # 只返回字体文件名
     
     return project_fonts
+
+def is_font_available(font_name: str) -> bool:
+    """检查字体是否可用"""
+    font_path = os.path.join("assets", "fonts", font_name)
+    resolved_font_path = get_resource_path(font_path)
+    return os.path.exists(resolved_font_path)

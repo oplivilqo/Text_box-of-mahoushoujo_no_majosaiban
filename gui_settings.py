@@ -6,7 +6,7 @@ import threading
 import os
 import yaml
 import sys
-from path_utils import get_available_fonts
+from path_utils import get_available_fonts, get_resource_path
 
 
 class SettingsWindow:
@@ -446,7 +446,7 @@ class SettingsWindow:
                 hotkeys.get(f"character_{i}", f"ctrl+{i}"),
                 current_display,
                 character_options,
-                i - 1,
+i - 1,
             )
 
     def create_hotkey_editable_row(self, parent, label, key, hotkey_value, row):
@@ -636,12 +636,12 @@ class SettingsWindow:
 
     def _get_available_fonts(self):
         """获取可用字体列表，优先显示项目字体"""
-        font_paths = get_available_fonts()
+        font_files = get_available_fonts()
         project_fonts = []
 
-        # 从路径中提取字体文件名（不含扩展名）
-        for font_path in font_paths:
-            if font_path and os.path.exists(font_path):
+        # 直接从路径中提取字体文件名（不含扩展名）
+        for font_path in font_files:
+            if font_path:
                 # 获取文件名（不含路径和扩展名）
                 font_name = os.path.splitext(os.path.basename(font_path))[0]
                 project_fonts.append(font_name)
@@ -753,7 +753,7 @@ class SettingsWindow:
             return False  # 如果快捷键无效，返回False
 
         # 加载现有的keymap配置
-        keymap_file = os.path.join(self.core.config.BASE_PATH, "config", "keymap.yml")
+        keymap_file = get_resource_path(os.path.join("config", "keymap.yml"))
         if os.path.exists(keymap_file):
             with open(keymap_file, 'r', encoding='utf-8') as f:
                 keymap_data = yaml.safe_load(f) or {}

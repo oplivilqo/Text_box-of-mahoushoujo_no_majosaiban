@@ -4,6 +4,7 @@ from clipboard_utils import ClipboardManager
 from image_processor import ImageProcessor
 from sentiment_analyzer import SentimentAnalyzer
 from load_utils import clear_cache, preload_all_images_async
+from path_utils import get_available_fonts
 
 import os
 import time
@@ -57,10 +58,6 @@ class ManosabaCore:
 
         # 状态更新回调
         self.status_callback = None
-
-        # 预览相关
-        # self.preview_emotion = None
-        # self.preview_background = None
 
         # GUI设置
         self.gui_settings = self.config_loader.load_gui_settings()
@@ -286,7 +283,6 @@ class ManosabaCore:
             
             # 查找对应情感的表情索引列表
             emotion_indices = character_meta.get(sentiment, [])
-            
             if not emotion_indices:
                 # 如果没有对应的情感，使用无感情表情
                 emotion_indices = character_meta.get("无感情", [])
@@ -355,7 +351,7 @@ class ManosabaCore:
         return False
 
     def get_current_font(self) -> str:
-        """返回当前角色的字体文件绝对路径"""
+        """返回当前角色的字体名称"""
         return self.image_processor.get_character_font(self.get_character())
 
     def get_current_emotion_count(self) -> int:
@@ -552,29 +548,24 @@ class ManosabaCore:
 
         try:
             # 使用GUI中设置的对话框字体，而不是角色专用字体
-            font_path = None
+            font_file = None
+            font_name=None
             font_family = self.gui_settings.get("font_family")
             font_size = self.gui_settings.get("font_size", 120)
 
-            # 如果设置了字体家族，查找对应的字体文件
+           # 如果设置了字体家族，检测是否在可用字体列表中
             if font_family:
-                # 查找字体文件
-                fonts_dir = os.path.join(self.config.BASE_PATH, "assets", "fonts")
-                if os.path.exists(fonts_dir):
-                    for file in os.listdir(fonts_dir):
-                        # 检查文件名是否包含字体家族名称（不区分大小写）
-                        if (
-                            font_family.lower() in file.lower()
-                            and file.lower().endswith((".ttf", ".otf", ".ttc"))
-                        ):
-                            font_path = os.path.join(fonts_dir, file)
-                            break
-
-                # 如果没找到匹配的字体文件，使用默认字体
-                if not font_path:
-                    font_path = self.get_current_font()  # 回退到角色专用字体
-            else:
-                font_path = self.get_current_font()  # 使用角色专用字体
+                # 获取可用字体列表（去掉后缀名的字体名称）
+                font_files = get_available_fonts()
+                for font_file in font_files:
+                    if font_file and font_family == os.path.splitext(os.path.basename(font_file))[0]:
+                        # 检查设置的字体家族是否在可用字体列表中
+                        font_name = font_file
+                        break
+            #字体回退
+            if font_name is None:
+                print(f"字体家族 {font_family} 不在可用字体列表中")
+                font_name = self.get_current_font()  # 使用角色专用字体名称
 
             # 获取文字颜色设置
             text_color_hex = self.gui_settings.get("text_color", "#FFFFFF")
@@ -587,11 +578,11 @@ class ManosabaCore:
             bracket_color = self.hex_to_rgb(bracket_color_hex)
 
             # 生成图片
-            png_bytes = self.image_processor.generate_image_fast(
+            bmp_bytes = self.image_processor.generate_image_fast(
                 character_name,
                 text,
                 image,
-                font_path,
+                font_name,  # 传递字体名称而非路径
                 font_size,
                 text_color,
                 bracket_color,
@@ -603,11 +594,11 @@ class ManosabaCore:
         except Exception as e:
             return f"生成图像失败: {e}"
 
-        if png_bytes is None:
+        if bmp_bytes is None:
             return "生成图像失败！"
 
         # 复制到剪贴板
-        if not self.clipboard_manager.copy_image_to_clipboard(png_bytes):
+        if not self.clipboard_manager.copy_image_to_clipboard(bmp_bytes):
             return "复制到剪贴板失败"
         
         print(f"[{int((time.time()-start_time)*1000)}] 图片复制到剪切板完成")

@@ -4,6 +4,7 @@ from typing import Dict, Any
 import openai
 import yaml
 import os
+from path_utils import get_resource_path
 
 class AIClientManager:
     """AI客户端管理器"""
@@ -51,7 +52,7 @@ class AIClientManager:
     
     def _load_config_from_file(self) -> Dict[str, Any]:
         """从配置文件加载配置"""
-        config_path = os.path.join(os.path.dirname(__file__), "config", "settings.yml")
+        config_path = get_resource_path(os.path.join("config", "settings.yml"))
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f)
@@ -62,7 +63,7 @@ class AIClientManager:
     
     def _save_config_to_file(self, config: Dict[str, Any]) -> bool:
         """保存配置到文件"""
-        config_path = os.path.join(os.path.dirname(__file__), "config", "settings.yml")
+        config_path = get_resource_path(os.path.join("config", "settings.yml"))
         try:
             with open(config_path, 'w', encoding='utf-8') as f:
                 yaml.dump(config, f, default_flow_style=False, allow_unicode=True, indent=2)

@@ -71,13 +71,12 @@ class ImageProcessor:
             self._load_character_image(character_name, emotion_index)
 
     def get_character_font(self, character_name: str) -> str:
-        """获取角色字体文件路径"""
+        """获取角色字体名称"""
         if character_name in self.mahoshojo:
-            font_file = self.mahoshojo[character_name].get("font", "font3.ttf")
-            return get_resource_path(os.path.join("assets", "fonts", font_file))
+            return self.mahoshojo[character_name].get("font", "font3.ttf")
         else:
             # 默认字体
-            return get_resource_path(os.path.join("assets", "fonts", "font3.ttf"))
+            return "font3.ttf"
 
     def generate_base_image_with_text(
         self, character_name: str, background_index: int, emotion_index: int
@@ -103,9 +102,9 @@ class ImageProcessor:
                 font_color = tuple(config["font_color"])
                 font_size = config["font_size"]
 
-                # 使用角色专用字体
-                font_path = self.get_character_font(character_name)
-                font = load_font_cached(font_path, font_size)
+                # 使用角色专用字体名称
+                font_name = self.get_character_font(character_name)
+                font = load_font_cached(font_name, font_size)
 
                 # 绘制阴影文字
                 shadow_position = (
@@ -124,7 +123,7 @@ class ImageProcessor:
         character_name: str,
         text: str = None,
         content_image: Image.Image = None,
-        font_path: str = None,
+        font_name: str = None,  # 改为字体名称参数
         font_size: int = None,
         text_color: tuple = (255, 255, 255),
         bracket_color: tuple = (137, 177, 251),
@@ -166,7 +165,7 @@ class ImageProcessor:
                 color=text_color,
                 bracket_color=bracket_color,
                 max_font_height=max_font_height,
-                font_path=font_path,
+                font_name=font_name,  # 传递字体名称
                 compression_settings=compression_settings
             )
         return result

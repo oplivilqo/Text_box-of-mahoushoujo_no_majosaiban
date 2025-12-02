@@ -16,19 +16,47 @@ class HotkeyManager:
         self.hotkey_thread = None
         self.last_hotkey_time = {}  # 记录每个热键的最后触发时间
         self.debounce_delay = 0.5   # 防抖延迟时间（秒）
+        self._thread_lock = threading.Lock()  # 线程锁，防止重复创建线程
 
     def setup_hotkeys(self):
-        """设置热键监听"""
-        self.hotkey_listener_active = True
+        """设置热键监听（仅在初始化时调用）"""
+        with self._thread_lock:
+            if self.hotkey_thread and self.hotkey_thread.is_alive():
+                return  # 如果线程已经在运行，则不重复启动
+            
+            self.hotkey_listener_active = True
+            self.hotkey_thread = threading.Thread(target=self.hotkey_listener, daemon=True)
+            self.hotkey_thread.start()
+            print("热键监听线程已启动")
+
+    def restart_hotkey_listener(self):
+        """重启热键监听线程（用于修改快捷键设置后）"""
+        with self._thread_lock:
+            # 先停止现有线程
+            self._stop_hotkey_listener()
+            
+            # 等待一小段时间确保线程完全停止
+            time.sleep(0.1)
+            
+            # 重新启动线程
+            self.hotkey_listener_active = True
+            self.hotkey_thread = threading.Thread(target=self.hotkey_listener, daemon=True)
+            self.hotkey_thread.start()
+            print("热键监听线程已重启")
+
+    def _stop_hotkey_listener(self):
+        """内部方法：停止热键监听线程"""
+        self.hotkey_listener_active = False
         if self.hotkey_thread and self.hotkey_thread.is_alive():
-            return  # 如果线程已经在运行，则不重复启动
-        self.hotkey_thread = threading.Thread(target=self.hotkey_listener, daemon=True)
-        self.hotkey_thread.start()
+            # 等待线程自然结束（最多等待1秒）
+            self.hotkey_thread.join(timeout=1.0)
+            if self.hotkey_thread.is_alive():
+                print("警告：热键监听线程未能正常停止，强制结束")
 
     def hotkey_listener(self):
         """热键监听线程"""
         try:
-            while True:  # 改为无限循环，通过hotkey_listener_active控制
+            while True:  # 保持无限循环，通过hotkey_listener_active控制是否处理热键
                 
                 # 重新加载设置以获取最新配置
                 try:
@@ -92,7 +120,23 @@ class HotkeyManager:
 
         except Exception as e:
             print(f"热键监听错误: {e}")
-            time.sleep(1)  # 出错时等待1秒再重试
+            # 出错时重新启动监听（但避免无限重启）
+            if self.hotkey_listener_active:
+                time.sleep(1)
+                if self.hotkey_listener_active:
+                    self.restart_hotkey_listener()
+
+    def toggle_hotkey_listener(self):
+        """切换热键监听状态"""
+        self.hotkey_listener_active = not self.hotkey_listener_active
+        status = "启用" if self.hotkey_listener_active else "禁用"
+        self.gui.update_status(f"热键监听已{status}")
+        print(f"热键监听状态已切换为: {status}")
+
+    def update_hotkeys(self):
+        """更新热键设置（供SettingsWindow调用）"""
+        # 修改快捷键设置后需要重启监听线程
+        self.restart_hotkey_listener()
 
     def _is_hotkey_pressed(self, hotkey, action_name):
         """热键检测"""

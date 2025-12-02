@@ -27,14 +27,14 @@ class ClipboardManager:
     def __init__(self):
         self.platform = PLATFORM
 
-    def copy_image_to_clipboard(self, png_bytes: bytes) -> bool:
-        """将PNG字节数据复制到剪贴板"""
+    def copy_image_to_clipboard(self, bmp_bytes: bytes) -> bool:
+        """将BMP字节数据复制到剪贴板"""
         try:
             if self.platform == "darwin":
-                return self._copy_image_macos(png_bytes)
+                return self._copy_image_macos(bmp_bytes)
             if self.platform.startswith("win"):
-                return self._copy_image_windows(png_bytes)
-            return self._copy_image_linux(png_bytes)
+                return self._copy_image_windows(bmp_bytes)
+            return self._copy_image_linux(bmp_bytes)
         except Exception as e:
             print(f"复制图片到剪贴板失败: {e}")
             return False
@@ -55,16 +55,12 @@ class ClipboardManager:
 
         return result.returncode == 0
 
-    def _copy_image_windows(self, png_bytes: bytes) -> bool:
+    def _copy_image_windows(self, bmp_bytes: bytes) -> bool:
         """Windows 复制图片到剪贴板"""
         try:
-            image = Image.open(io.BytesIO(png_bytes))
-            with io.BytesIO() as output:
-                image.convert("RGB").save(output, "BMP")
-                bmp_data = output.getvalue()[14:]
             win32clipboard.OpenClipboard()
             win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, bmp_data)
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, bmp_bytes)
             win32clipboard.CloseClipboard()
             return True
         except Exception as e:
