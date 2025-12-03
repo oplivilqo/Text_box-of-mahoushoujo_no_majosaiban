@@ -13,14 +13,13 @@ import keyboard
 import queue
 import tkinter.font as tkfont
 import os
-from config_loader import load_all_and_validate, MAHOSHOJO, BACKGROUND_INDEXES
+from config_loader import BACKGROUND_INDEXES, save_process_whitelist, load_keymap, save_keymap, list_fonts, save_chara_font, get_resource_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # 全局状态
 state = hotkeys.AppState()
-roles = list(core.mahoshojo.keys())
 selected_image = None  # 保存剪贴板里的图片
 
 # 背景选择状态
@@ -42,7 +41,6 @@ hotkey_var = None
 
 PREVIEW_MAX_SIZE = (360, 360)
 
-#貌似是用来适配不同版本间的pillow的，aidebug的，我也不知道为啥
 try:
     RESAMPLE = Image.Resampling.LANCZOS
 except Exception:
@@ -52,7 +50,6 @@ except Exception:
         RESAMPLE = 1
 
 
-#预处理窗口
 class PreloadWindow(tk.Toplevel):
     def __init__(self, parent, title='资源预生成'):
         super().__init__(parent)
@@ -69,11 +66,9 @@ class PreloadWindow(tk.Toplevel):
         self.lbl = ttk.Label(self, text='正在预处理资源，请稍候...')
         self.lbl.pack(side='left', padx=8, pady=(0,8))
 
-        # queue用来跨进程通信
         self._q = queue.Queue()
         self._polling = False
 
-    #添加一行文本
     def add_line(self, line: str):
         try:
             self.text.config(state='normal')
@@ -88,7 +83,6 @@ class PreloadWindow(tk.Toplevel):
             self._polling = True
             self.after(interval, self._poll_queue)
 
-    #自动轮询队列
     def _poll_queue(self):
         try:
             while not self._q.empty():
@@ -127,17 +121,6 @@ class PreloadWindow(tk.Toplevel):
 
         def worker():
             try:
-                # 调用统一加载与校验入口
-                loaded, report = load_all_and_validate(os_name='win32', callback=cb)
-                # 应用到 core 的全局变量（先不移除旧值，预处理后使用新的配置）
-                try:
-                    core.mahoshojo = loaded.get('mahoshojo', core.mahoshojo) or core.mahoshojo
-                    core.text_configs_dict = loaded.get('text_configs', core.text_configs_dict) or core.text_configs_dict
-                except Exception:
-                    logger.exception('应用配置失败')
-                # 校验失败则抛错中止
-                if not report.get('ok', False):
-                    raise RuntimeError('资源校验失败，请检查配置与 assets 目录')
                 core.prepare_resources(callback=cb)
                 self._q.put('__PRELOAD_DONE__')
             except Exception:
@@ -162,6 +145,179 @@ class PreloadWindow(tk.Toplevel):
         self.destroy()
 
 
+class SettingsDialog(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title('设置')
+        self.geometry('560x460')
+        self.transient(parent)
+        self.grab_set()
+
+        self._km = load_keymap() or {}
+
+        nb = ttk.Notebook(self)
+        self.tab_whitelist = ttk.Frame(nb)
+        self.tab_hotkeys = ttk.Frame(nb)
+        self.tab_font = ttk.Frame(nb)
+        nb.add(self.tab_whitelist, text='窗口白名单')
+        nb.add(self.tab_hotkeys, text='快捷键')
+        nb.add(self.tab_font, text='角色字体')
+        nb.pack(fill='both', expand=True, padx=8, pady=6)
+
+        self._build_whitelist_tab()
+        self._build_hotkeys_tab()
+        self._build_font_tab()
+
+        frm_btns = ttk.Frame(self)
+        frm_btns.pack(fill='x', padx=8, pady=6)
+        ttk.Button(frm_btns, text='保存', command=self._on_save).pack(side='right', padx=4)
+        ttk.Button(frm_btns, text='取消', command=self.destroy).pack(side='right')
+
+    # 白名单页
+    def _build_whitelist_tab(self):
+        self.var_enable_whitelist = tk.BooleanVar(value=state.enable_whitelist)
+        chk = ttk.Checkbutton(self.tab_whitelist, text='启用窗口白名单', variable=self.var_enable_whitelist)
+        chk.pack(anchor='w', padx=6, pady=6)
+
+        frm = ttk.Frame(self.tab_whitelist)
+        frm.pack(fill='both', expand=True, padx=6, pady=4)
+        self.lst_whitelist = tk.Listbox(frm, height=10)
+        self.lst_whitelist.pack(side='left', fill='both', expand=True)
+        scrl = ttk.Scrollbar(frm, orient='vertical', command=self.lst_whitelist.yview)
+        scrl.pack(side='left', fill='y')
+        self.lst_whitelist.config(yscrollcommand=scrl.set)
+
+        for name in (state.window_whitelist or []):
+            self.lst_whitelist.insert('end', name)
+
+        frm2 = ttk.Frame(self.tab_whitelist)
+        frm2.pack(fill='x', padx=6, pady=4)
+        self.entry_process = ttk.Entry(frm2)
+        self.entry_process.pack(side='left', fill='x', expand=True)
+        ttk.Button(frm2, text='添加', command=self._add_process).pack(side='left', padx=4)
+        ttk.Button(frm2, text='删除选中', command=self._remove_selected).pack(side='left')
+
+    def _add_process(self):
+        val = self.entry_process.get().strip()
+        if not val:
+            return
+        self.lst_whitelist.insert('end', val)
+        self.entry_process.delete(0, 'end')
+
+    def _remove_selected(self):
+        for i in reversed(self.lst_whitelist.curselection()):
+            self.lst_whitelist.delete(i)
+
+    # 快捷键页
+    def _build_hotkeys_tab(self):
+        grid = ttk.Frame(self.tab_hotkeys)
+        grid.pack(fill='both', expand=True, padx=8, pady=6)
+        labels = [
+            ('启动生成', 'start_hotkey', state.start_hotkey),
+            ('粘贴', 'paste_hotkey', state.paste_hotkey),
+            ('发送', 'send_hotkey', state.send_hotkey),
+            ('全选', 'select_all_hotkey', state.select_all_hotkey),
+            ('剪切', 'cut_hotkey', state.cut_hotkey),
+        ]
+        self.hotkey_vars = {}
+        for r, (label, key, default) in enumerate(labels):
+            ttk.Label(grid, text=label + '：').grid(row=r, column=0, sticky='e', padx=4, pady=4)
+            var = tk.StringVar(value=str(self._km.get(key, default)))
+            ent = ttk.Entry(grid, textvariable=var, width=24)
+            ent.grid(row=r, column=1, sticky='w', padx=4, pady=4)
+            self.hotkey_vars[key] = var
+        for i in range(2):
+            grid.columnconfigure(i, weight=1)
+
+    # 角色字体页
+    def _build_font_tab(self):
+        frm = ttk.Frame(self.tab_font)
+        frm.pack(fill='both', expand=True, padx=8, pady=6)
+
+        ttk.Label(frm, text='角色：').grid(row=0, column=0, sticky='e', padx=4, pady=4)
+        self.var_role = tk.StringVar(value=state.current_role)
+        cmb_role = ttk.Combobox(frm, values=list(core.mahoshojo.keys()), textvariable=self.var_role, state='readonly', width=18)
+        cmb_role.grid(row=0, column=1, sticky='w', padx=4, pady=4)
+
+        ttk.Label(frm, text='字体文件：').grid(row=1, column=0, sticky='e', padx=4, pady=4)
+        # 初始值设置为当前角色字体
+        current_font = core.mahoshojo.get(state.current_role, {}).get('font', '')
+        self.var_font_file = tk.StringVar(value=current_font)
+        fonts = list_fonts()
+        self.cmb_font = ttk.Combobox(frm, values=fonts, textvariable=self.var_font_file, state='readonly', width=24)
+        self.cmb_font.grid(row=1, column=1, sticky='w', padx=4, pady=4)
+
+        ttk.Button(frm, text='应用到该角色', command=self._apply_role_font).grid(row=2, column=1, sticky='w', padx=4, pady=6)
+
+        frm.columnconfigure(1, weight=1)
+
+        # 当角色选择变化时，同步更新字体选择的当前值为该角色已有字体
+        def on_role_change(_evt=None):
+            role = self.var_role.get()
+            font_val = core.mahoshojo.get(role, {}).get('font', '')
+            try:
+                self.var_font_file.set(font_val)
+            except Exception:
+                logger.exception('更新角色字体初始值失败')
+        cmb_role.bind('<<ComboboxSelected>>', on_role_change)
+        # 进入界面时也确保一次同步
+        on_role_change()
+
+    def _apply_role_font(self):
+        role = self.var_role.get().strip()
+        font_file = self.var_font_file.get().strip()
+        if not role or not font_file:
+            logger.info('字体未变更或参数缺失 role=%s font=%s', role, font_file)
+            return
+        cfg_path = get_resource_path('config/chara_meta.yml')
+        logger.info('准备保存角色字体: role=%s font=%s -> %s', role, font_file, cfg_path)
+        ok = save_chara_font(role, font_file)
+        logger.info('保存角色字体结果: ok=%s', ok)
+        if ok:
+            try:
+                core.mahoshojo[role]['font'] = font_file
+            except Exception:
+                pass
+            messagebox.showinfo('字体', f'已应用字体 {font_file} 到角色 {role}')
+        else:
+            messagebox.showerror('字体', '保存失败，请检查配置文件权限')
+
+    def _on_save(self):
+        # 白名单
+        items = [self.lst_whitelist.get(i) for i in range(self.lst_whitelist.size())]
+        state.window_whitelist = items
+        state.enable_whitelist = bool(self.var_enable_whitelist.get())
+        wl_path = get_resource_path('config/process_whitelist.yml')
+        logger.info('准备保存白名单(%d)：%s -> %s', len(items), items, wl_path)
+        ok_wl = save_process_whitelist('win32', items)
+        logger.info('保存白名单结果: ok=%s', ok_wl)
+
+        # 快捷键 -> keymap.yml
+        mapping = {}
+        for k, var in self.hotkey_vars.items():
+            val = var.get().strip()
+            if not val:
+                continue
+            setattr(state, k, val)
+            mapping[k] = val
+        km_path = get_resource_path('config/keymap.yml')
+        logger.info('准备保存快捷键：%s -> %s', mapping, km_path)
+        ok_km = save_keymap(mapping)
+        logger.info('保存快捷键结果: ok=%s', ok_km)
+        if not ok_km:
+            messagebox.showwarning('提示', '保存快捷键失败，已应用到当前会话')
+
+        # 使新启动热键生效
+        try:
+            if hotkey_var and hotkey_var.get():
+                hotkeys.unregister_hotkeys()
+                hotkeys.register_hotkeys(state)
+                logger.info('热键已重新注册: start=%s paste=%s send=%s', state.start_hotkey, state.paste_hotkey, state.send_hotkey)
+        except Exception:
+            logger.exception('重新注册热键失败')
+
+        self.destroy()
+
 
 def build_ui():
     global role_var, text_widget, btn_generate, preview_label, status_label, auto_paste_var, auto_send_var, hotkey_var
@@ -170,27 +326,20 @@ def build_ui():
     frm_top = ttk.Frame(root)
     frm_top.pack(fill='x', padx=8, pady=6)
 
-    # 角色标签
     ttk.Label(frm_top, text='角色:').pack(side='left')
-    # 角色下拉框
     role_var = tk.StringVar(value=state.current_role)
     cmb_role = ttk.Combobox(frm_top, values=list(core.mahoshojo.keys()), textvariable=role_var, state='readonly')
     cmb_role.pack(side='left', padx=(4, 8))
 
-    # 表情选择标签
     ttk.Label(frm_top, text='表情:').pack(side='left')
-    # 表情下拉框
     global expression_var, cmb_expression
     expression_var = tk.StringVar(value='随机')
     cmb_expression = ttk.Combobox(frm_top, textvariable=expression_var, state='readonly', width=8)
     cmb_expression.pack(side='left', padx=(4, 8))
 
-    # 背景选择标签
     ttk.Label(frm_top, text='背景:').pack(side='left')
-    # 背景下拉框
     global bg_var, cmb_bg
     bg_var = tk.StringVar(value='随机')
-    # 使用扫描到的背景数量
     count_bg = len(BACKGROUND_INDEXES) or 16
     options_bg = ['随机'] + [str(i) for i in range(1, count_bg + 1)]
     cmb_bg = ttk.Combobox(frm_top, textvariable=bg_var, values=options_bg, state='readonly', width=8)
@@ -208,32 +357,28 @@ def build_ui():
 
     cmb_bg.bind('<<ComboboxSelected>>', on_bg_selected)
 
-    # 热键启用复选框
+    ttk.Button(frm_top, text='设置', command=lambda: SettingsDialog(root)).pack(side='left', padx=8)
+
     hotkey_var = tk.BooleanVar(value=False)
     chk_hotkeys = ttk.Checkbutton(frm_top, text='启用热键', variable=hotkey_var, command=lambda: toggle_hotkeys(hotkey_var.get()))
     chk_hotkeys.pack(side='left', padx=4)
 
-    # 自动粘贴复选框
     auto_paste_var = tk.BooleanVar(value=state.auto_paste)
     chk_paste = ttk.Checkbutton(frm_top, text='自动粘贴', variable=auto_paste_var, command=lambda: set_auto_paste(auto_paste_var.get()))
     chk_paste.pack(side='left', padx=4)
 
-    # 自动发送复选框
     auto_send_var = tk.BooleanVar(value=state.auto_send)
     chk_send = ttk.Checkbutton(frm_top, text='自动发送', variable=auto_send_var, command=lambda: set_auto_send(auto_send_var.get()))
     chk_send.pack(side='left', padx=4)
 
-    # 中间主区，左侧文本右侧预览
     frm_main = ttk.Frame(root)
     frm_main.pack(fill='both', expand=True, padx=8, pady=6)
 
-    # 文本输入区域容器
     frm_left = ttk.Frame(frm_main)
     frm_left.pack(side='left', fill='both', expand=True)
 
-    # 输入文本标签
     ttk.Label(frm_left, text='输入文本:').pack(anchor='w')
-    # 文本输入控件
+
     try:
         families = tkfont.families()
         if 'Segoe UI Emoji' in families:
@@ -245,54 +390,47 @@ def build_ui():
     except Exception:
         text_font = ('Arial', 12)
 
+    global text_widget
     text_widget = tk.Text(frm_left, height=8, width=48, font=text_font)
     text_widget.pack(fill='both', expand=True)
 
-    # 按钮行容器
     frm_buttons = ttk.Frame(frm_left)
     frm_buttons.pack(fill='x', pady=(6,0))
 
-    # 生成按钮
+    global btn_generate
     btn_generate = ttk.Button(frm_buttons, text='生成', command=on_generate_click)
     btn_generate.pack(side='left')
 
-    # 从剪贴板读取图片按钮
     btn_paste_image = ttk.Button(frm_buttons, text='从剪贴板读取图片', command=on_paste_image_from_clipboard)
     btn_paste_image.pack(side='left', padx=6)
 
-    # 右侧预览容器
     frm_right = ttk.Frame(frm_main, width=PREVIEW_MAX_SIZE[0])
     frm_right.pack(side='left', fill='y', padx=(8,0))
 
-    # 预览标签
     ttk.Label(frm_right, text='预览:').pack(anchor='w')
-    # 预览显示控件
+    global preview_label
     preview_label = ttk.Label(frm_right)
     preview_label.pack()
 
-    # 状态栏
+    global status_label
     status_label = ttk.Label(root, text='状态：就绪')
     status_label.pack(fill='x', padx=8, pady=(0,8))
-
 
     def update_expression_options(role_name):
         try:
             emotion_count = core.mahoshojo[role_name]['emotion_count']
             options = ['随机'] + [str(i) for i in range(1, emotion_count + 1)]
             cmb_expression['values'] = options
-            # 重置为随机
             expression_var.set('随机')
         except Exception:
             logger.exception('更新表情选项失败')
-    
-    # 初始设置表情选项
+
     update_expression_options(state.current_role)
 
     def on_role_selected(event):
         try:
             selected = role_var.get()
             state.current_role = selected
-            # 更新表情选择器选项
             update_expression_options(selected)
             try:
                 idx = list(core.mahoshojo.keys()).index(selected) + 1
@@ -303,14 +441,13 @@ def build_ui():
             logger.exception('切换失败')
     
     def on_expression_selected(event):
-        """表情选择器回调"""
         try:
             selected = expression_var.get()
             state.current_expression = -1 if selected == '随机' else int(selected)
             logger.info('表情设置为: %s', selected)
         except Exception:
             logger.exception('设置表情失败')
-            
+
     cmb_role.bind('<<ComboboxSelected>>', on_role_selected)
     cmb_expression.bind('<<ComboboxSelected>>', on_expression_selected)
 
@@ -320,7 +457,6 @@ def on_generate_click():
     text = text_widget.get('1.0', 'end').strip()
     content_image = selected_image
 
-    # 读取表情选择器的值
     try:
         selected_expr = expression_var.get()
         expressionindex = -1 if selected_expr == '随机' else int(selected_expr)
@@ -331,16 +467,13 @@ def on_generate_click():
     btn_generate.config(state='disabled')
     status_label.config(text='状态：生成中...')
 
-    # 后台执行耗时生成，传入表情索引
     threading.Thread(target=_worker_generate, args=(text or None, content_image, role, expressionindex, selected_bg_index), daemon=True).start()
 
 
 def _worker_generate(text, content_image, role, expressionindex, bg_index):
     try:
-        # 使用新的assets/fonts路径
         font_path = core.get_resource_path(os.path.join("assets", "fonts", core.mahoshojo[role]['font'])) if role in core.mahoshojo else None
         png_bytes, expr = core.generate_image(text=text, content_image=content_image, role_name=role, font_path=font_path, last_value=state.last_expression, expression=expressionindex, bg_index=bg_index)
-        # 更新 last_expression（在主线程也可更新）
         if expr is not None:
             state.last_expression = expr
         root.after(0, lambda: on_result(png_bytes, expr))
@@ -355,10 +488,8 @@ def on_result(png_bytes, expr):
         status_label.config(text='状态：生成失败')
         return
 
-    # 显示预览
     try:
         img = Image.open(io.BytesIO(png_bytes))
-        # 缩放以适配预览区
         img.thumbnail(PREVIEW_MAX_SIZE, RESAMPLE)
         tkimg = ImageTk.PhotoImage(img)
         preview_label.config(image=tkimg)
@@ -368,7 +499,6 @@ def on_result(png_bytes, expr):
 
     status_label.config(text=f'状态：生成完成 表情:{expr}')
 
-    # 自动粘贴/发送
     if auto_paste_var.get():
         try:
             clipboard.copy_png_bytes_to_clipboard(png_bytes)
@@ -376,7 +506,6 @@ def on_result(png_bytes, expr):
             logger.exception('复制失败')
             status_label.config(text='状态：复制到剪贴板失败')
             return
-        # 使用 keyboard.call_later 在 keyboard 的线程安全发送按键
         keyboard.call_later(lambda: keyboard.send(state.paste_hotkey), delay=0.12)
         if auto_send_var.get():
             keyboard.call_later(lambda: keyboard.send(state.send_hotkey), delay=0.35)
@@ -396,7 +525,6 @@ def on_paste_image_from_clipboard():
             status_label.config(text='状态：剪贴板没有图片')
             return
         selected_image = img
-        # 显示缩略预览
         img2 = img.copy()
         img2.thumbnail(PREVIEW_MAX_SIZE, RESAMPLE)
         tkimg = ImageTk.PhotoImage(img2)
@@ -433,38 +561,30 @@ def on_close():
     root.destroy()
 
 
-#在预处理完成前不显示主窗口
 if __name__ == '__main__':
     preload = PreloadWindow(root)
     preload.start_prepare()
-    # 等待 preload 窗口关闭，同时处理 Tk 事件以保证窗口可见和可更新
     try:
         import time as _time
         while True:
-            # 如果 preload 已被销毁则退出循环
             if not preload.winfo_exists():
                 break
-            # 处理事件，保持窗口响应
             root.update()
             _time.sleep(0.05)
     except Exception:
-        # 兜底，确保不会无限阻塞
         try:
             root.wait_window(preload)
         except Exception:
             pass
-    #重新显示
     root.deiconify()
     build_ui()
 
-    #复选框打勾
     try:
         hotkey_var.set(True)
         toggle_hotkeys(True)
     except Exception:
         logger.exception('热键注册失败')
 
-    #注册下拉栏回调函数
     try:
         def _on_role_change(new_role):
             try:

@@ -1,13 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_submodules
+import os
 
 datas = []
 binaries = []
 hiddenimports = ['PIL._tkinter_finder', 'PIL.Image', 'PIL.ImageDraw', 'PIL.ImageFont', 'win32clipboard', 'win32con', 'win32api', 'win32gui', 'win32process', 'pywintypes', 'keyboard', 'pyperclip', 'psutil']
-tmp_ret = collect_all('pilmoji')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-tmp_ret = collect_all('emoji')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+
+# Include pilmoji and emoji packages' data
+_tmp = collect_all('pilmoji')
+datas += _tmp[0]; binaries += _tmp[1]; hiddenimports += _tmp[2]
+_tmp = collect_all('emoji')
+datas += _tmp[0]; binaries += _tmp[1]; hiddenimports += _tmp[2]
+
+# Ensure PyYAML submodules are included
+hiddenimports += collect_submodules('yaml')
+
+# NOTE: We intentionally DO NOT bundle external resources (assets/, config/).
+# They must be placed next to the built executable and will be loaded at runtime.
 
 
 a = Analysis(

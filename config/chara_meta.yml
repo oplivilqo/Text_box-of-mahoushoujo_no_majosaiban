@@ -10,7 +10,7 @@ mahoshojo:
   sherri:
     full_name: 橘雪莉
     emotion_count: 7
-    font: font3.ttf
+    font: font2.ttf
   hanna:
     full_name: 远野汉娜
     emotion_count: 5
@@ -59,9 +59,3 @@ mahoshojo:
     full name: 千早爱音
     emotion_count: 1
     font: font3.ttf
-# 在下方添加新角色信息，依次为全名、表情差分数量、使用字体
-# 如：
-#  warden:
-#    full_name: 典狱长
-#    emotion_count: 1
-#    font: font3.ttf

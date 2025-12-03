@@ -1,14 +1,9 @@
-## 进程白名单配置文件
-# 进程名称不区分大小写
-# windows
 win32:
-  - TIM.exe
-  - QQ.exe
-  - WeChat.exe
-  - WeChatApp.exe
-  - Weixin.exe
-
-# macOS
+- TIM.exe
+- WeChat.exe
+- Weixin.exe
+- WeChatApp.exe
+- QQ.exe
 darwin:
-  - QQ.app
-  - WeChat.app
+- QQ.app
+- WeChat.app

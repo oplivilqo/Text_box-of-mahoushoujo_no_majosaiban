@@ -11,9 +11,16 @@ _font_cache = {}
 # ===== PyInstaller 资源路径处理函数 =====
 def get_resource_path(relative_path):
     try:
-        base_path = sys._MEIPASS
-    except AttributeError:
+        # 打包后：sys.executable 是 exe 的路径
+        if getattr(sys, 'frozen', False):
+            # 获取 exe 所在目录
+            base_path = os.path.dirname(sys.executable)
+        else:
+            # 开发环境：脚本文件所在目录
+            base_path = os.path.dirname(os.path.abspath(__file__))
+    except Exception:
         base_path = os.path.dirname(os.path.abspath(__file__))
+    
     return os.path.join(base_path, relative_path)
 
 Align = Literal["left", "center", "right"]

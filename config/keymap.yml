@@ -1,138 +1,15 @@
-# 热键配置文件
-
-# Windows热键配置
-# Keyboard库格式，参考：https://keyboard.readthedocs.io/en/latest/index.html
 win32:
-  # 角色切换
-#  switch_character:
-#    - key: "ctrl+1"
-#      param: 1
-#    - key: "ctrl+2"
-#      param: 2
-#    - key: "ctrl+3"
-#      param: 3
-#    - key: "ctrl+4"
-#      param: 4
-#    - key: "ctrl+5"
-#      param: 5
-#    - key: "ctrl+6"
-#      param: 6
-#    - key: "ctrl+7"
-#      param: 7
-#    - key: "ctrl+8"
-#      param: 8
-#    - key: "ctrl+9"
-#      param: 9
-#    - key: "ctrl+q"
-#      param: 10
-#    - key: "ctrl+e"
-#      param: 11
-#    - key: "ctrl+r"
-#      param: 12
-#    - key: "ctrl+t"
-#      param: 13
-#    - key: "ctrl+y"
-#      param: 14
-#    - key: "ctrl+u"
-#      param: 15
-  # 显示当前角色
-#  show_current_character:
-#    - key: "ctrl+0"
-
-  # 表情切换
-#  get_expression:
-#    - key: "alt+1"
-#      param: 1
-#    - key: "alt+2"
-#      param: 2
-#    - key: "alt+3"
-#      param: 3
-#    - key: "alt+4"
-#      param: 4
-#    - key: "alt+5"
-#      param: 5
-#    - key: "alt+6"
-#      param: 6
-#    - key: "alt+7"
-#      param: 7
-#    - key: "alt+8"
-#      param: 8
-#    - key: "alt+9"
-#      param: 9
-
-  # 启动生成
-  start_generate: "ctrl+e"
-  # 删除缓存
-  delete_cache: "ctrl+d"
-  # 退出程序
-  quit: "ctrl+q"
-  # 暂停/继续
-  pause: "ctrl+r"
-
-
-# macOS热键配置
-# pynput格式，参考：https://pynput.readthedocs.io/en/latest/keyboard.html#pynput.keyboard.Key
+  start_generate: ctrl+e
+  delete_cache: ctrl+d
+  quit: ctrl+q
+  pause: ctrl+r
 darwin:
-  # 角色切换
-#  switch_character:
-#    - key: "<ctrl>+1"
-#      param: 1
-#    - key: "<ctrl>+2"
-#      param: 2
-#    - key: "<ctrl>+3"
-#      param: 3
-#    - key: "<ctrl>+4"
-#      param: 4
-#    - key: "<ctrl>+5"
-#      param: 5
-#    - key: "<ctrl>+6"
-#      param: 6
-#    - key: "<ctrl>+7"
-#      param: 7
-#    - key: "<ctrl>+8"
-#      param: 8
-#    - key: "<ctrl>+9"
-#      param: 9
-#    - key: "<ctrl>+q"
-#      param: 10
-#    - key: "<ctrl>+e"
-#      param: 11
-#    - key: "<ctrl>+r"
-#      param: 12
-#    - key: "<ctrl>+t"
-#      param: 13
-#    - key: "<ctrl>+y"
-#      param: 14
-#    - key: "<ctrl>+u"
-#      param: 15
-
-  # 显示当前角色
-#  show_current_character:
-#    - key: "<ctrl>+0"
-
-  # 表情切换 (Alt+数字键)
-#  get_expression:
-#    - key: "<alt>+1"
-#      param: 1
-#    - key: "<alt>+2"
-#      param: 2
-#    - key: "<alt>+3"
-#      param: 3
-#    - key: "<alt>+4"
-#      param: 4
-#    - key: "<alt>+5"
-#      param: 5
-#    - key: "<alt>+6"
-#      param: 6
-#    - key: "<alt>+7"
-#      param: 7
-#    - key: "<alt>+8"
-#      param: 8
-#    - key: "<alt>+9"
-#      param: 9
-
-  # 功能键
-  start_generate: "<ctrl>+enter"
-  delete_cache: "<ctrl>+d"
-  quit: "<ctrl>+q"
-  pause: "<ctrl>+r"
+  start_generate: <ctrl>+enter
+  delete_cache: <ctrl>+d
+  quit: <ctrl>+q
+  pause: <ctrl>+r
+start_hotkey: enter
+paste_hotkey: ctrl+v
+send_hotkey: enter
+select_all_hotkey: ctrl+a
+cut_hotkey: ctrl+x

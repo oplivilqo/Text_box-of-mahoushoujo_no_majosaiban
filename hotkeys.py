@@ -10,34 +10,41 @@ import psutil
 import os
 import core
 import clipboard
-from config_loader import load_all_and_validate, PROCESS_WHITELIST
+from config_loader import load_process_whitelist, load_keymap
 
 logger = logging.getLogger(__name__)
 
-# 默认窗口白名单（由配置覆盖，保留作回退）
-DEFAULT_WINDOW_WHITELIST = ["TIM.exe", "WeChat.exe", "Weixin.exe", "WeChatApp.exe", "QQ.exe"]
-
-# 存放已注册的热键句柄
 _registered_hotkeys = []
 
-#整合了一下全局变量
 class AppState:
     def __init__(self):
-        self.current_role = list(core.mahoshojo.keys())[2] #不知道为啥默认橘雪莉
-        self.current_expression=-1
+        roles = list(core.mahoshojo.keys())
+        self.current_role = (roles[0] if roles else '')
+        self.current_expression = -1
         self.last_expression = -1
         self.auto_paste = True
         self.auto_send = True
+        # 白名单开关（会话内，可在设置里切换）
         self.enable_whitelist = True
-        # 优先使用配置中的白名单
-        self.window_whitelist = PROCESS_WHITELIST or DEFAULT_WINDOW_WHITELIST
+        # 从配置文件加载白名单（不使用任何硬编码默认）
+        try:
+            self.window_whitelist = load_process_whitelist('win32')
+        except Exception:
+            logger.exception('加载窗口白名单失败')
+            self.window_whitelist = []
         self.busy = False
         self.delay = 0.08
-        #热键
-        self.paste_hotkey = 'ctrl+v'
-        self.send_hotkey = 'enter'
-        self.select_all_hotkey = 'ctrl+a'
-        self.cut_hotkey = 'ctrl+x'
+        # 从 key map.yml 读取快捷键（若缺失，keyboard 库会按空字符串忽略）
+        km = {}
+        try:
+            km = load_keymap() or {}
+        except Exception:
+            km = {}
+        self.start_hotkey = str(km.get('start_hotkey', 'enter'))
+        self.paste_hotkey = str(km.get('paste_hotkey', 'ctrl+v'))
+        self.send_hotkey = str(km.get('send_hotkey', 'enter'))
+        self.select_all_hotkey = str(km.get('select_all_hotkey', 'ctrl+a'))
+        self.cut_hotkey = str(km.get('cut_hotkey', 'ctrl+x'))
 
 
 # 获取前台 exe 名称
@@ -52,7 +59,8 @@ def get_foreground_exe_name():
         logger.debug("获取前台进程exe名失败: %s", e)
         return None
 
-#清除魔裁缓存文件夹
+
+# 清除魔裁缓存文件夹
 def _clear_magic_cut_folder():
     folder = core.get_magic_cut_folder()
     if not os.path.isdir(folder):
@@ -66,7 +74,8 @@ def _clear_magic_cut_folder():
     # 清除缓存文件夹后，也清除内存缓存
     core.clear_image_cache()
 
-#统一处理剪贴板操作
+
+# 统一处理剪贴板操作
 def _perform_keyboard_actions(png_bytes, state: AppState):
     if png_bytes is None:
         logger.warning("png_bytes里没东西")
@@ -83,7 +92,8 @@ def _perform_keyboard_actions(png_bytes, state: AppState):
         if state.auto_send:
             keyboard.call_later(lambda: keyboard.send(state.send_hotkey), delay=0.25)
 
-#进行图片生成和发送的工作线程
+
+# 进行图片生成和发送的工作线程
 def _worker_generate_and_send(text: str, content_image, state: AppState):
     try:
         # 更新为新的目录结构
@@ -101,35 +111,42 @@ def _worker_generate_and_send(text: str, content_image, state: AppState):
         keyboard.call_later(lambda: _perform_keyboard_actions(png_bytes, state), delay=0)
         state.busy = False
 
-#enter触发处理
-def _on_enter_trigger(state: AppState):
+
+# 启动触发处理
+def _on_start_trigger(state: AppState):
     if state.busy:
-        logger.debug("系统繁忙，忽略enter")
+        logger.debug("系统繁忙，忽略触发")
         return
     exe = get_foreground_exe_name()
-    if state.enable_whitelist and exe not in state.window_whitelist:
+    if state.enable_whitelist and state.window_whitelist and exe not in state.window_whitelist:
         logger.debug("前台exe %s 不在白名单内", exe)
-        keyboard.send('enter')
+        # 若热键为 Enter，保持原有 Enter 行为；否则忽略
+        if state.start_hotkey.lower() == 'enter':
+            keyboard.send('enter')
         return
     try:
         select_k = getattr(state, 'select_all_hotkey', 'ctrl+a')
         cut_k = getattr(state, 'cut_hotkey', 'ctrl+x')
         delay = getattr(state, 'delay', 0.08)
-        text, old_clip = clipboard.cut_all_and_get_text(select_k, cut_k, delay)
+        text, _ = clipboard.cut_all_and_get_text(select_k, cut_k, delay)
         content_image = clipboard.try_get_image()
     except Exception:
         logger.exception("剪切失败")
-        keyboard.send('enter')
+        # 若热键为 Enter，保持原有 Enter 行为；否则忽略
+        if state.start_hotkey.lower() == 'enter':
+            keyboard.send('enter')
         return
-    #启动后台生成
+    # 启动后台生成
     state.busy = True
     t = threading.Thread(target=_worker_generate_and_send, args=(text, content_image, state), daemon=True)
     t.start()
 
-#用于同步切换角色快捷键和下拉栏的函数
+
+# 用于同步切换角色快捷键和下拉栏的函数
 role_change_callback = None
 
-#切换角色
+
+# 切换角色
 def switch_role_by_index(idx: int, state: AppState):
     roles = list(core.mahoshojo.keys())
     if 1 <= idx <= len(roles):
@@ -147,14 +164,15 @@ def switch_role_by_index(idx: int, state: AppState):
     return False
 
 
-#切换自动粘贴
+# 切换自动粘贴
 def toggle_auto_paste(state: AppState):
     state.auto_paste = not state.auto_paste
     if not state.auto_paste:
         state.auto_send = False
     logger.info("auto_paste=%s auto_send=%s", state.auto_paste, state.auto_send)
 
-#切换自动发送
+
+# 切换自动发送
 def toggle_auto_send(state: AppState):
     if not state.auto_paste:
         logger.info("自动发送需要自动粘贴开启")
@@ -162,10 +180,12 @@ def toggle_auto_send(state: AppState):
     state.auto_send = not state.auto_send
     logger.info("auto_send=%s", state.auto_send)
 
-#注册热键
+
+# 注册热键
 def register_hotkeys(state: AppState = None):
     if state is None:
         state = AppState()
+    # 保留角色切换与缓存清理热键（如需完全配置化，可后续迁移至 keymap.yml）
     for i in range(1, 10):
         hk = keyboard.add_hotkey(f'ctrl+{i}', lambda idx=i: switch_role_by_index(idx, state))
         _registered_hotkeys.append(hk)
@@ -175,15 +195,14 @@ def register_hotkeys(state: AppState = None):
     _registered_hotkeys.append(keyboard.add_hotkey('ctrl+t', lambda: switch_role_by_index(13, state)))
     _registered_hotkeys.append(keyboard.add_hotkey('ctrl+y', lambda: switch_role_by_index(14, state)))
 
-    # 清缓存
     _registered_hotkeys.append(keyboard.add_hotkey('ctrl+tab', lambda: _clear_magic_cut_folder()))
-    
-    #启动！！
-    _registered_hotkeys.append(keyboard.add_hotkey('enter', lambda: _on_enter_trigger(state), suppress=True))
+    if state.start_hotkey:
+        _registered_hotkeys.append(keyboard.add_hotkey(state.start_hotkey, lambda: _on_start_trigger(state), suppress=True))
 
     return _registered_hotkeys
 
-#注销热键
+
+# 注销热键
 def unregister_hotkeys():
     for hk in list(_registered_hotkeys):
         try:
