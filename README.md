@@ -10,7 +10,7 @@
 
 ## BUG记录
 1. 强调字符只有半边时着色有问题（暂时没找着效率比较好的方法）
-2. emoji绘制需要联网，而且网络不好时，带emoji的文本可能生成失败（pilmoji库的问题）
+2. 复杂的组合emoji无法正常显示，比如 👨‍👩‍👧‍👦 👨🏻‍👩🏼‍👧🏽‍👦🏾
 3. 同时剪切图像和文本时总是只有文本能正常显示（图像似乎无法提取出来）
 4. 快捷键编辑页无法用滚轮滚动
 
@@ -22,7 +22,8 @@
 3. 增加了实时预览功能
 3. 添加了随机人物差分和背景的开关
 4. 添加了情感自动匹配功能
-5. 添加了设置界面并提供一些基本设置，包括：
+5. 添加了纯本地运行的emoji绘制功能
+6. 添加了设置界面并提供一些基本设置，包括：
    - 字体字号和颜色设置
    - 白名单进程编辑
    - 快捷键设置
@@ -37,8 +38,8 @@
 
 ## 使用须知
 1. 目前程序还有很多细节部分会在后续优化
-2. 代码是deepseek写的，补药喷我
-3. 有想法随便提，有意思的我会尽力实现
+2. 有想法随便提，有意思的我会尽力实现
+3. 代码是deepseek写的，补药喷我
 
 ## 预览
 <img width="1200" height="390" alt="5f10f4239bc8a82812e505fd0c4f5567" src="https://github.com/user-attachments/assets/6fb46a8d-4fc4-4d10-80a0-ed21fbb428bf" />
@@ -49,7 +50,6 @@
 一个基于Python的自动化表情包生成工具，能够快速生成带有自定义文本的魔法少女的魔女裁判文本框图片。[灵感来源与代码参考](https://github.com/MarkCup-Official/Anan-s-Sketchbook-Chat-Box)
 
 <div align="left">
-
 
 ## 功能特色
 
@@ -90,7 +90,7 @@
    - 字体文件放置在`<根目录>/assets/fonts`文件夹中，然后打开设置即可修改
    - 字体大小和颜色可以在设置中修改
    - 关于强调字体颜色，如下图所示：
-   <img width="1280" height="417" alt="image" src="https://github.com/user-attachments/assets/342015e0-2cfe-4636-ac27-ded37d13347a" />
+   <img width="1280" height="417" alt="43ba3c2e-e3cd-420f-8672-b6b16a1b74a8" src="https://github.com/user-attachments/assets/159eedfb-2659-4dc0-ad96-53778dffe2bd" />
 5. 表情匹配设置：
    - 表情匹配功能默认关闭，需要在设置中开启
    - 可以下载ollama运行本地模型，也可以使用deepseek的api，需要其它模型的话请自行在setting.yml里面添加
@@ -158,9 +158,12 @@ warden:
 ## 更新日志
 
 ### v1.5
-- 提升图片合成性能（大概省了130ms左右）
+- 提升图片合成性能（大概省了150ms左右？）
+- 采用纯本地方式绘制emoji，大幅提升效率（从几百ms降至100ms以内）
+- 移除了部分强调字符(英文单引号，括号等)
 - 修复了以下bug：
   + exe程序读取不到文件的bug
+  + 不能把图片粘贴上去的bug
 
 ### v1.4
 - 改为使用openai模块与ai通信
@@ -216,6 +219,12 @@ warden:
 - 增添了自主切换表情功能
 - 将特殊字体改为红色
 
+
+## 第三方素材声明
+
+本项目使用的表情符号图形（PNG格式）来源于 [Noto Emoji](https://github.com/googlefonts/noto-emoji) 项目。
+- 此部分素材遵循 [SIL Open Font License 1.1](licenses/OFL.txt) 许可证。
+- 原始版权信息与完整声明请参阅项目中的 [`NOTICE.txt`](licenses/NOTICE.txt) 文件。
 
 ### 许可证
 

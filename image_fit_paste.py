@@ -88,7 +88,4 @@ def paste_image_auto(
     else:
         img.paste(resized, (px, py))
 
-    # 输出 PNG bytes
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
+    return img

@@ -103,8 +103,7 @@ hiddenimports = [
     'pyclip',
     
     # 其他必要模块
-    'yaml',
-    'pilmoji'
+    'yaml'
 ]
 
 # 尝试收集一些可能被动态导入的模块

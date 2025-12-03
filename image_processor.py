@@ -1,6 +1,7 @@
 """图片处理模块 - 优化版本"""
 
 import os
+from io import BytesIO
 import random
 from PIL import Image, ImageDraw #, ImageFont
 
@@ -168,6 +169,10 @@ class ImageProcessor:
                 font_name=font_name,  # 传递字体名称
                 compression_settings=compression_settings
             )
+        else:
+            buf = BytesIO()
+            result.convert("RGB").save(buf, format="BMP")
+            result = buf.getvalue()[14:]
         return result
 
     def generate_preview_image(
