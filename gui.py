@@ -29,6 +29,34 @@ selected_bg_index = -1  # -1 表示随机
 root = tk.Tk()
 root.title("魔裁，启动！！")
 
+# 主题与 DPI 缩放
+def _apply_theme_and_dpi():
+    try:
+        style = ttk.Style()
+        # 选择更现代的主题（优先 vista/xpnative，其次 clam）
+        for theme in ('vista', 'xpnative', 'clam'):  # 顺序尝试
+            if theme in style.theme_names():
+                style.theme_use(theme)
+                logger.info('应用主题: %s', theme)
+                break
+    except Exception:
+        logger.exception('应用主题失败')
+    # 自动 DPI 缩放，按屏幕 DPI 计算比例：ppi/72
+    try:
+        ppi = root.winfo_fpixels('1i')  # 每英寸像素
+        scaling = max(1.0, float(ppi) / 72.0)
+        root.tk.call('tk', 'scaling', scaling)
+        logger.info('应用 DPI 缩放: ppi=%.2f scaling=%.2f', ppi, scaling)
+    except Exception:
+        # 退回固定缩放
+        try:
+            root.tk.call('tk', 'scaling', 1.25)
+            logger.info('应用默认 DPI 缩放: 1.25')
+        except Exception:
+            logger.exception('设置 DPI 缩放失败')
+
+_apply_theme_and_dpi()
+
 # 控件占位
 role_var = None
 text_widget = None
